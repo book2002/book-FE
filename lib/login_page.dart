@@ -44,7 +44,35 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
-      appBar: AppBar(title: const Text("로그인"),),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+
+        title: const Text(
+          "로그인",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,    //title 중앙정렬
+
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new), //뒤로가기 아이콘 변경
+          onPressed: () {
+            Navigator.pop(context);   //뒤로가기 기능 유지
+          },
+        ),
+        
+        //하단 구분선 추가
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.grey.shade300,
+            height: 1.0,
+          ),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
