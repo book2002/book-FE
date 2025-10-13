@@ -38,6 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("로그인 시도"))
     );
+    Navigator.pop(context, true);
   }
 
   @override

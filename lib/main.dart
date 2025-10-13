@@ -23,15 +23,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -40,12 +31,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 2;   //하단 네비게이터 탭 인덱스, 중앙의 홈을 디폴트로 설정
+  bool _isLoggedIn = false; //로그인 여부 확인 변수
 
   //탭 클릭 시 호출되는 함수
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  void _goToLoginPage() async {
+    final result = await Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (context)=> const LoginPage()),
+    );
+
+    //로그인 상태 전환
+    if (result==true) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+    }
   }
 
   @override
@@ -56,7 +62,17 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.white,
         title: Text(widget.title),
         actions: [
-          Container(
+          _isLoggedIn
+          ? IconButton(
+            icon: const Icon(Icons.account_circle,),
+            onPressed: () {
+              //TODO: 프로필 페이지 이동 로직 추가 예정
+              setState(() {
+                _isLoggedIn = false;
+              });
+            },
+          )
+          : Container(
             margin: const EdgeInsets.only(right: 12, top: 6, bottom: 6),
             child: TextButton(
               style: TextButton.styleFrom(
@@ -66,10 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),  //안쪽 여백 설정
               ),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>const LoginPage()),);
-                //Navigator -> 로그인 화면 전환
-              },
+              onPressed: _goToLoginPage,
               child: const Text(
                 "로그인",
                 style: TextStyle(color: Color.fromARGB(255, 110, 110, 110)),
