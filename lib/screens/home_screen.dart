@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/bookpage/book_detail.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -109,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fit: BoxFit.cover,    //이미지를 영역에 가득 채움
                           ),
                         ),
+                        //오른편: 책 정보
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
@@ -141,6 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     onTap: () {
                       // TODO: 책 상세 페이지로 이동
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(
+                          builder: (context) => BookDetailPage(
+                            title: book['title'], 
+                            author: book['author'], 
+                            thumbnail: book['thumbnail']
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ) 
