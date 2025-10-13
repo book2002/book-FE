@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/login_page.dart';   //login_page import
 
+//하단 네비게이터로 전환될 screen import
+import 'screens/home_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -103,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
             //추후 각 화면 위젯화하는 작업 필요
             const Text("도우미"),
             const Text("도서관"),
-            const Text("홈"),
+            HomeScreen(),
             const Text("책장"),
             const Text("프로필"),
           ],
