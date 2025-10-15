@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
+import 'package:flutter_app/testdata/book_dummy.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -10,25 +11,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-
-  //책 더미 데이터
-  final List<Map<String, dynamic>> _books = [
-    {
-      'title': '데미안',
-      'author': '헤르만 헤세',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/8231856-L.jpg',
-    },
-    {
-      'title': '1984',
-      'author': '조지 오웰',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/7222246-L.jpg',
-    },
-    {
-      'title': '어린 왕자',
-      'author': '앙투안 드 생텍쥐페리',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/8101341-L.jpg',
-    },
-  ];
 
   void _onSearch() {
     final query = _searchController.text.trim();
@@ -75,11 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal, //가로 스크롤
-              itemCount: _books.length,
+              itemCount: dummyBooks.length,
               shrinkWrap: true,         //내부 높이 내용에 맞게 계산
               physics: const AlwaysScrollableScrollPhysics(), //스크롤 허용
               itemBuilder: (context, index) {
-                final book = _books[index];
+                final book = dummyBooks[index];
                 final screenWidth = MediaQuery.of(context).size.width;
                 final cardWidth = screenWidth/2-30;   //화면 절반, 여백 보정
                 
@@ -127,6 +109,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 Text(
                                   book['author'],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12
+                                  ),
+                                ),
+                                Text(
+                                  "진행률 : ",
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
