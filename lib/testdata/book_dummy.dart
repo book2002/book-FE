@@ -15,4 +15,9 @@ final List<Map<String, dynamic>> dummyBooks = [
     'author': '앙투안 드 생텍쥐페리',
     'thumbnail': 'https://covers.openlibrary.org/b/id/8101341-L.jpg',
   },
+  {
+    'title': '죄와 벌',
+    'author': '도스토옙스키',
+    'thumbnail': 'https://covers.openlibrary.org/b/id/8231991-L.jpg',
+  }
 ];

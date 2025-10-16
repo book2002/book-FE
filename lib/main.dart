@@ -3,6 +3,7 @@ import 'package:flutter_app/login_page.dart';   //login_page import
 
 //하단 네비게이터로 전환될 screen import
 import 'screens/home_screen.dart';
+import 'screens/booklist_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -107,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
             const Text("도우미"),
             const Text("도서관"),
             HomeScreen(),
-            const Text("책장"),
+            BooklistScreen(),
             const Text("프로필"),
           ],
         ),
