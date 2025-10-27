@@ -5,6 +5,7 @@ import 'package:flutter_app/login_page.dart';   //login_page import
 import 'screens/home_screen.dart';
 import 'screens/booklist_screen.dart';
 import 'screens/profile_screen.dart';
+import 'package:flutter_app/screens/grop_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -106,11 +107,17 @@ class _MyHomePageState extends State<MyHomePage> {
           index: _selectedIndex,
           children: [
             //추후 각 화면 위젯화하는 작업 필요
-            const Text("도우미"),
-            const Text("도서관"),
-            HomeScreen(),
-            BooklistScreen(),
             //TODO: 로그인 상태에 따른 화면 로직
+            const Text("도우미"),
+            GroupScreen(),
+            HomeScreen(),
+            
+            _isLoggedIn
+              ? const BooklistScreen()
+              : const Center(
+                child: Text('로그인이 필요한 서비스입니다.'),
+              ),
+
             _isLoggedIn
               ? const ProfileScreen()
               : const Center(
