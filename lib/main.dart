@@ -4,6 +4,7 @@ import 'package:flutter_app/login_page.dart';   //login_page import
 //하단 네비게이터로 전환될 screen import
 import 'screens/home_screen.dart';
 import 'screens/booklist_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -103,13 +104,18 @@ class _MyHomePageState extends State<MyHomePage> {
         // in the middle of the parent.
         child: IndexedStack(
           index: _selectedIndex,
-          children: const [
+          children: [
             //추후 각 화면 위젯화하는 작업 필요
             const Text("도우미"),
             const Text("도서관"),
             HomeScreen(),
             BooklistScreen(),
-            const Text("프로필"),
+            //TODO: 로그인 상태에 따른 화면 로직
+            _isLoggedIn
+              ? const ProfileScreen()
+              : const Center(
+                child: Text('로그인이 필요한 서비스입니다.'),
+              ),
           ],
         ),
       ),
@@ -129,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.help), label: '도우미'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: '도서관'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: '모임'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: '책장'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
