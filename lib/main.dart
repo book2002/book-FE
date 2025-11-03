@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'screens/booklist_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:flutter_app/screens/grop_screen.dart';
+import 'package:flutter_app/screens/helper_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -108,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             //추후 각 화면 위젯화하는 작업 필요
             //TODO: 로그인 상태에 따른 화면 로직
-            const Text("도우미"),
+            const HelperScreen(),
             GroupScreen(),
             HomeScreen(),
             
