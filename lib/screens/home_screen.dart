@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
+import 'package:flutter_app/testdata/book_dummy.dart';
+import 'package:flutter_app/widget/BookListWidget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -10,25 +12,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-
-  //책 더미 데이터
-  final List<Map<String, dynamic>> _books = [
-    {
-      'title': '데미안',
-      'author': '헤르만 헤세',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/8231856-L.jpg',
-    },
-    {
-      'title': '1984',
-      'author': '조지 오웰',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/7222246-L.jpg',
-    },
-    {
-      'title': '어린 왕자',
-      'author': '앙투안 드 생텍쥐페리',
-      'thumbnail': 'https://covers.openlibrary.org/b/id/8101341-L.jpg',
-    },
-  ];
 
   void _onSearch() {
     final query = _searchController.text.trim();
@@ -50,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),  //margin 설정
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,18 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
             onSubmitted: (_) => _onSearch(),
           ),
           const SizedBox(height: 16,),
-          const Text('현재 읽고 있는 책이에요.'),
+
+          Padding(
+            padding: EdgeInsetsGeometry.only(left: 10),
+            child: Text(
+              '현재 읽고 있는 책이에요.',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+              )
+            ),
+          ),
           const SizedBox(height: 8,),
           //카드뷰
           SizedBox(
             height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal, //가로 스크롤
-              itemCount: _books.length,
+              itemCount: dummyBooks.length,
               shrinkWrap: true,         //내부 높이 내용에 맞게 계산
               physics: const AlwaysScrollableScrollPhysics(), //스크롤 허용
               itemBuilder: (context, index) {
-                final book = _books[index];
+                final book = dummyBooks[index];
                 final screenWidth = MediaQuery.of(context).size.width;
                 final cardWidth = screenWidth/2-30;   //화면 절반, 여백 보정
                 
@@ -134,6 +126,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontSize: 12
                                   ),
                                 ),
+                                Text(
+                                  "진행률 : ",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12
+                                  ),
+                                ),
                               ],
                             ),
                           )
@@ -161,8 +162,23 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          const SizedBox(height: 10,),
-          const Text("추천 도서")
+          
+          const SizedBox(height: 18,),
+          Padding(
+            padding: EdgeInsetsGeometry.only(left: 10),
+            child: Text("추천 도서",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+              )
+            ),
+          ),
+
+          BookListWidget(books: dummyBooks, tabType: 'before'),
+
+          // 추천 도서 리스트 추가
+          // Expanded(
+          //   child: BookListWidget(books: dummyBooks, tabType: 'before')
+          // )
         ],
       ),
     );
