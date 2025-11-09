@@ -14,6 +14,8 @@ class BookListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      shrinkWrap: true, // 내부 높이를 자동으로 계산
+      // physics: NeverScrollableScrollPhysics(), // 외부 스크롤과 충돌 방지
       itemCount: books.length,
       itemBuilder: (context, index) {
         final book = books[index];

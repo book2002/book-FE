@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
+import 'package:flutter_app/widget/BookListWidget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -32,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),  //margin 설정
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,7 +51,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onSubmitted: (_) => _onSearch(),
           ),
           const SizedBox(height: 16,),
-          const Text('현재 읽고 있는 책이에요.'),
+
+          Padding(
+            padding: EdgeInsetsGeometry.only(left: 10),
+            child: Text(
+              '현재 읽고 있는 책이에요.',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+              )
+            ),
+          ),
           const SizedBox(height: 8,),
           //카드뷰
           SizedBox(
@@ -152,8 +162,23 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          const SizedBox(height: 10,),
-          const Text("추천 도서")
+          
+          const SizedBox(height: 18,),
+          Padding(
+            padding: EdgeInsetsGeometry.only(left: 10),
+            child: Text("추천 도서",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+              )
+            ),
+          ),
+
+          BookListWidget(books: dummyBooks, tabType: 'before'),
+
+          // 추천 도서 리스트 추가
+          // Expanded(
+          //   child: BookListWidget(books: dummyBooks, tabType: 'before')
+          // )
         ],
       ),
     );
