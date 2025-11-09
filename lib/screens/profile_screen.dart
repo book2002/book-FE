@@ -115,6 +115,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
+                              Text("한 줄 바이오 설명글"),
+                              SizedBox(height: 3,),
                               Text(
                                 "user name",
                                 style: TextStyle(
@@ -166,10 +168,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // TODO: 공개 설정한 감상문만 보이도록 설정해야함
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.only(left: 20, top: 20, bottom: 10),
+              padding: const EdgeInsets.only(left: 25, top: 20, bottom: 10),
               child: Text(
                 '작성한 감상문',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                 ),
               ),
@@ -188,7 +190,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
 
           SliverToBoxAdapter(
-            child: Text("모임"),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 25, top: 20, bottom: 10),
+              child: Text(
+                "모임",
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ) 
           )
         ],
       ),

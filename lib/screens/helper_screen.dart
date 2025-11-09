@@ -31,7 +31,12 @@ class _HelperScreenState extends State<HelperScreen> {
           const HabitTracker(),     //해빗트래커 연결 
           
           const SizedBox(height: 20,),
-          const StopwatchWidget(),  //스톱워치 연결
+          Padding(
+            //타이머 주변 여백 설정
+            padding: EdgeInsetsGeometry.symmetric(horizontal: 26, vertical: 10),
+            child: const StopwatchWidget(),  //스톱워치 연결
+          ),
+          
         ],
       ),
     );
