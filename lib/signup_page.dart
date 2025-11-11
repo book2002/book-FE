@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_app/main.dart';
+import 'package:flutter_app/constants.dart';
+
 import 'package:intl/intl.dart';          //DateFormat 사용을 위한 intl 패키지
 //flutter pub add intl로 다운로드 후 사용
-
-import 'package:flutter_app/login_page.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSON 인코딩/디코딩
@@ -212,7 +211,7 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _signUp() async {
-    _showSignupSuccessDialog();
+    //_showSignupSuccessDialog();
 
     final formState = _formKey.currentState;
     if (formState == null) {
@@ -221,7 +220,7 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    if (!_formKey.currentState!.validate()) {
+    if (!formState.validate()) {
       // 폼 검증 실패 시 함수 종료
       return;
     }
@@ -244,7 +243,7 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
-      final url = Uri.parse("http://localhost:8080/api/v1/member/signup");    //웹 환경에서는 localhost 사용
+      final url = Uri.parse(signupApiUrl);    //웹 환경에서는 localhost 사용
       final response = await http.post(
         url,
         headers: {
@@ -261,8 +260,11 @@ class _SignupPageState extends State<SignupPage> {
         _showSignupSuccessDialog();   //회원가입 확인창
       } else {
         // 400 오류 등 다른 상태 코드 처리
+        final errorBody = (response.body);
+        //final errorMessage = errorBody["message"] ?? "알 수 없는 오류가 발생했습니다.";
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("회원가입 실패: ${response.statusCode} ${response.body}"))
+          SnackBar(content: Text(errorBody))
         );
       }
     } catch (e) {
@@ -300,6 +302,8 @@ class _SignupPageState extends State<SignupPage> {
         padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
+          // 실시간 유효성 검사 모드 -> 입력 후 다른 곳 터치 시 자동으로 유효성 검사 수행
+          autovalidateMode: AutovalidateMode.onUnfocus,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -309,20 +313,20 @@ class _SignupPageState extends State<SignupPage> {
                   labelText: "이메일",
                   border: const OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
+                    borderSide: BorderSide(color: primaryColor, width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
                   errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                    borderSide: BorderSide(color: errorColor, width: 1.5)
                   ),
                   focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                    borderSide: BorderSide(color: errorColor, width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
                   errorStyle: TextStyle(
-                    color: const Color(0xFFCC0000),
+                    color: errorColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -351,20 +355,20 @@ class _SignupPageState extends State<SignupPage> {
                   labelText: "이름",
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
+                    borderSide: BorderSide(color: primaryColor, width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
                   errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                    borderSide: BorderSide(color: errorColor, width: 1.5)
                   ),
                   focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                    borderSide: BorderSide(color: errorColor, width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
                   errorStyle: TextStyle(
-                    color: const Color(0xFFCC0000),
+                    color: errorColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -376,7 +380,6 @@ class _SignupPageState extends State<SignupPage> {
                   if (value == null || value.isEmpty) {
                     return '이름을 입력해주세요.';
                   }
-
                   return null;
                 },
               ),
@@ -388,20 +391,20 @@ class _SignupPageState extends State<SignupPage> {
                   labelText: "비밀번호",
                   border: const OutlineInputBorder(),
                   focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
+                    borderSide: BorderSide(color: primaryColor, width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
                   errorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 1.5)
+                    borderSide: BorderSide(color: errorColor, width: 1.5)
                   ),
                   focusedErrorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 2.5)
+                    borderSide: BorderSide(color: errorColor, width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
                   errorStyle: const TextStyle(
-                    color: Color(0xFFCC0000),
+                    color: errorColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -441,20 +444,20 @@ class _SignupPageState extends State<SignupPage> {
                   labelText: "비밀번호 확인",
                   border: const OutlineInputBorder(),
                   focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
+                    borderSide: BorderSide(color: primaryColor, width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
                   errorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 1.5)
+                    borderSide: BorderSide(color: errorColor, width: 1.5)
                   ),
                   focusedErrorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 2.5)
+                    borderSide: BorderSide(color: errorColor, width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
                   errorStyle: const TextStyle(
-                    color: Color(0xFFCC0000),
+                    color: errorColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -536,7 +539,28 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
               const SizedBox(height: 24,),
-              ElevatedButton(onPressed: _signUp, child: const Text("회원가입"))
+              ElevatedButton(
+                onPressed: _isLoading ? null : _signUp,   //로딩 중일 경우 버튼 비활성화
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  elevation: 0,
+                ),
+                child: _isLoading
+                ? const SizedBox(
+                  height: 20, width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                ) 
+                : Text(
+                  "회원가입",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+              )
             ],
           ),
         )
