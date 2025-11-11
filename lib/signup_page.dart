@@ -3,6 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';          //DateFormat 사용을 위한 intl 패키지
 //flutter pub add intl로 다운로드 후 사용
 
+import 'package:flutter_app/login_page.dart';
+
+import 'package:http/http.dart' as http;
+import 'dart:convert'; // JSON 인코딩/디코딩
+
 class SignupPage extends StatefulWidget {
   const SignupPage({Key? key}) : super(key: key);
 
@@ -45,10 +50,12 @@ class _SignupPageState extends State<SignupPage> {
 
   //컨트롤러
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _isLoading = false; // 로딩 상태 표시용
 
   //라디오 버튼 초기값 설정
   String? _sexValue;        //? -> null 값 허용, null 초기화
@@ -136,14 +143,14 @@ class _SignupPageState extends State<SignupPage> {
     // TODO: implement dispose
     //메모리 누수 방지
     _emailController.dispose();
-    _usernameController.dispose();
+    _nameController.dispose();
     _idController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _signUp() {
+  Future<void> _signUp() async {
 
     final formState = _formKey.currentState;
     if (formState == null) {
@@ -158,8 +165,7 @@ class _SignupPageState extends State<SignupPage> {
     }
 
     final email = _emailController.text.trim();
-    final username = _usernameController.text.trim();
-    final id = _idController.text.trim();
+    final name = _nameController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
@@ -170,10 +176,60 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    // TODO: 회원가입 로직 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("회원가입 시도"))
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
+      final url = Uri.parse("http://localhost:8080/api/v1/member/signup");    //웹 환경에서는 localhost 사용
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+          "name": name,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+
+        final memberId = data["memberId"];
+        final status = data["status"];
+        final role = data["role"];
+        final createdAt = data["createdAt"];
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("회원가입 성공! $memberId $status $role $createdAt"))
+        );
+
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context)=>const LoginPage()),
+        );
+
+        // ✅ 필요 시 토큰 저장 (예: shared_preferences 이용)
+        // ✅ 새 유저라면 회원가입 추가 정보 페이지로 보내는 처리 가능
+      } else {
+        // 400 오류 등 다른 상태 코드 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("회원가입 실패: ${response.statusCode} ${response.body}"))
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("오류 발생: $e")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
   }
 
   @override
@@ -205,7 +261,7 @@ class _SignupPageState extends State<SignupPage> {
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(    // 추후 변경될 가능성이 있으므로 const 사용 x
-                  labelText: "email",
+                  labelText: "이메일",
                   border: const OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
@@ -245,15 +301,39 @@ class _SignupPageState extends State<SignupPage> {
               ),
               const SizedBox(height: 18,),
               TextFormField(
-                controller: _idController,
+                controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: "id",
+                  labelText: "이름",
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
-                  )
+                  ),
+
+                  //오류 시 테두리 style 지정
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                  ),
+
+                  //오류 메시지 style 지정
+                  errorStyle: TextStyle(
+                    color: const Color(0xFFCC0000),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 keyboardType: TextInputType.text,
+
+                //사용자 입력이 유효한지 실시간으로 확인
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '이름을 입력해주세요.';
+                  }
+
+                  return null;
+                },
               ),
               const SizedBox(height: 18,),
               TextFormField(
@@ -263,9 +343,37 @@ class _SignupPageState extends State<SignupPage> {
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
-                  )
+                  ),
+
+                  //오류 시 테두리 style 지정
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                  ),
+
+                  //오류 메시지 style 지정
+                  errorStyle: TextStyle(
+                    color: const Color(0xFFCC0000),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  
                 ),
                 obscureText: true,  //텍스트 가림 처리
+
+                //사용자 입력이 유효한지 실시간으로 확인
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '비밀번호를 입력해주세요.'; // 1. 입력이 비어있을 때 표시할 문구
+                  }
+                  if (value.length < 8) {
+                    return '비밀번호를 8자 이상 입력하세요.'; // 2. 형식 오류
+                  }
+
+                  return null;
+                },
               ),
               const SizedBox(height: 18,),
               TextFormField(
@@ -275,9 +383,32 @@ class _SignupPageState extends State<SignupPage> {
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
-                  )
+                  ),
+
+                  //오류 시 테두리 style 지정
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                  ),
+
+                  //오류 메시지 style 지정
+                  errorStyle: TextStyle(
+                    color: const Color(0xFFCC0000),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 obscureText: true,
+
+                validator: (value) {
+                  if (value != _passwordController.text.trim()) {
+                    return '비밀번호가 일치하지 않습니다.';
+                  }
+
+                  return null;
+                },
               ),
               const SizedBox(height: 18,),
               const Text("성별", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
