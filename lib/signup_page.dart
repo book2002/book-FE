@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_app/main.dart';
 import 'package:intl/intl.dart';          //DateFormat 사용을 위한 intl 패키지
 //flutter pub add intl로 다운로드 후 사용
 
@@ -57,11 +58,72 @@ class _SignupPageState extends State<SignupPage> {
 
   bool _isLoading = false; // 로딩 상태 표시용
 
+  // 비밀번호 숨김/표시 상태 변수 추가
+  bool _isPasswordObscured = true;
+  bool _isConfirmPasswordObscured = true;
+
   //라디오 버튼 초기값 설정
   String? _sexValue;        //? -> null 값 허용, null 초기화
 
   //생년월일 저장 변수
   DateTime? _dateTime;
+
+  //회원가입 성공 시 호출할 다이얼로그 함수
+  Future<void> _showSignupSuccessDialog() async {
+    //async 작업 후 context 사용 시, 위젯이 여전히 마운트되어 있는지 확인
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,    //바깥쪽 탭해도 닫히지 않게 설정
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          // 둥근 모서리
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.0),
+          ),
+          backgroundColor: Colors.white, // 배경 하얗게
+          contentPadding: EdgeInsets.symmetric(horizontal: 60, vertical: 20),
+          title: const Text(
+            "회원가입 성공!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "로그인 화면으로 이동하시겠어요?",
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center, // 버튼 중앙 정렬
+          actions: [
+            // "아니요" 버튼
+            TextButton(
+              child: const Text("아니요", style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                // 1. 다이얼로그만 닫기
+                Navigator.of(dialogContext).pop();
+                
+                // 2. 홈 화면 이동
+                // popUntil 사용 -> 스택 맨 밑의 메인 화면으로 돌아감
+                // route.isFirst = 스택 맨 밑의 메인 화면
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+            ),
+            // "예" 버튼
+            TextButton(
+              child: const Text("예", style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () {
+                // 1. 다이얼로그 닫기
+                Navigator.of(dialogContext).pop();
+                
+                // 2. 회원가입창을 닫고 로그인 페이지로 이동
+                Navigator.of(context).pop();
+              },
+            ),
+          ]
+        );
+      },
+    );
+  }
 
   void _showCupertinoDatePicker(BuildContext context) async {
     DateTime tempPickedDate = _dateTime ?? DateTime(2000);    //임시 날짜 저장
@@ -140,7 +202,6 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     //메모리 누수 방지
     _emailController.dispose();
     _nameController.dispose();
@@ -151,6 +212,7 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _signUp() async {
+    _showSignupSuccessDialog();
 
     final formState = _formKey.currentState;
     if (formState == null) {
@@ -196,24 +258,7 @@ class _SignupPageState extends State<SignupPage> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-
-        final memberId = data["memberId"];
-        final status = data["status"];
-        final role = data["role"];
-        final createdAt = data["createdAt"];
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("회원가입 성공! $memberId $status $role $createdAt"))
-        );
-
-        Navigator.push(
-          context, 
-          MaterialPageRoute(builder: (context)=>const LoginPage()),
-        );
-
-        // ✅ 필요 시 토큰 저장 (예: shared_preferences 이용)
-        // ✅ 새 유저라면 회원가입 추가 정보 페이지로 보내는 처리 가능
+        _showSignupSuccessDialog();   //회원가입 확인창
       } else {
         // 400 오류 등 다른 상태 코드 처리
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,30 +383,43 @@ class _SignupPageState extends State<SignupPage> {
               const SizedBox(height: 18,),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
+                obscureText: _isPasswordObscured,  //텍스트 가림 처리
+                decoration: InputDecoration(
                   labelText: "비밀번호",
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                  errorBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 1.5)
                   ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                  focusedErrorBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
-                  errorStyle: TextStyle(
-                    color: const Color(0xFFCC0000),
+                  errorStyle: const TextStyle(
+                    color: Color(0xFFCC0000),
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                   
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      //setState 호출로 상태 변경
+                      setState(() {
+                        _isPasswordObscured = !_isPasswordObscured;
+                      });
+                    },
+                    padding: EdgeInsets.only(right: 15),
+                  )
                 ),
-                obscureText: true,  //텍스트 가림 처리
 
                 //사용자 입력이 유효한지 실시간으로 확인
                 validator: (value) {
@@ -378,29 +436,43 @@ class _SignupPageState extends State<SignupPage> {
               const SizedBox(height: 18,),
               TextFormField(
                 controller: _confirmPasswordController,
-                decoration: const InputDecoration(
+                obscureText: _isConfirmPasswordObscured,
+                decoration: InputDecoration(
                   labelText: "비밀번호 확인",
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
+                  border: const OutlineInputBorder(),
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFF00AA00), width: 1.8)
                   ),
 
                   //오류 시 테두리 style 지정
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 1.5)
+                  errorBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 1.5)
                   ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: const Color(0xFFCC0000), width: 2.5)
+                  focusedErrorBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFCC0000), width: 2.5)
                   ),
 
                   //오류 메시지 style 지정
-                  errorStyle: TextStyle(
-                    color: const Color(0xFFCC0000),
+                  errorStyle: const TextStyle(
+                    color: Color(0xFFCC0000),
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
+
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      //setState 호출로 상태 변경
+                      setState(() {
+                        _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
+                      });
+                    },
+                    padding: EdgeInsets.only(right: 15),
+                  )
                 ),
-                obscureText: true,
 
                 validator: (value) {
                   if (value != _passwordController.text.trim()) {
