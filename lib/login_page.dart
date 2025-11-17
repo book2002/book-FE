@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSON 인코딩/디코딩
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,9 +22,12 @@ class _LoginPageState extends State<LoginPage> {
   // 폼 키 추가
   final _formKey = GlobalKey<FormState>();
 
-  //컨트롤러
+  // 컨트롤러
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // Secure Storage 인스턴스 생성
+  final _storage = const FlutterSecureStorage();
 
   // 비밀번호 숨김/표시 상태 변수 추가
   bool _isPasswordObscured = true;
@@ -70,14 +74,28 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
+        
+        // 서버로부터 받은 토큰을 storage에 저장
+        final accessToken = data["accessToken"];
+        if (accessToken != null) {
+          await _storage.write(key: 'accessToken', value: accessToken);
+          print("토큰 저장 성공"); // 디버깅용
+        } else {
+          print("경고: 서버 응답에 accessToken이 없습니다.");
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("로그인 성공! $response.body"))
+          SnackBar(content: Text("로그인 성공! $response"))
         );
 
-        if (data["nweUser"]) {
+        if (data["newUser"]) {
           //프로필 생성 화면으로 이동
-          
+          Navigator.pushReplacement( // 로그인 페이지로 다시 돌아오지 않도록 'Replacement' 사용
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileSetupPage(),
+            ),
+          );
         } else {
           Navigator.pop(context, true);   //로그인 성공 여부를 전달하며 홈화면으로 돌아감
         }
