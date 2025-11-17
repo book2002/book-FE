@@ -61,12 +61,6 @@ class _SignupPageState extends State<SignupPage> {
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
-  //라디오 버튼 초기값 설정
-  String? _sexValue;        //? -> null 값 허용, null 초기화
-
-  //생년월일 저장 변수
-  DateTime? _dateTime;
-
   //회원가입 성공 시 호출할 다이얼로그 함수
   Future<void> _showSignupSuccessDialog() async {
     //async 작업 후 context 사용 시, 위젯이 여전히 마운트되어 있는지 확인
@@ -123,81 +117,6 @@ class _SignupPageState extends State<SignupPage> {
       },
     );
   }
-
-  void _showCupertinoDatePicker(BuildContext context) async {
-    DateTime tempPickedDate = _dateTime ?? DateTime(2000);    //임시 날짜 저장
-
-    showModalBottomSheet(
-      context: context, 
-      shape: const RoundedRectangleBorder(  //둥근 모서리 설정
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16))
-      ),
-      builder: (BuildContext builder) {
-        return Container(
-          color: Colors.white,
-          height: 300,
-          child: Column(
-            children: [
-              //상단 버튼
-              SizedBox(
-                height: 50,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("취소"),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _dateTime = tempPickedDate;   //최종 날짜 전달
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: const Text("확인"),
-                    ),
-                    
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: BirthDatePicker(
-                  initDateStr: _dateTime == null
-                      ? '2000-01-01'
-                      : DateFormat('yyyy-MM-dd').format(_dateTime!),
-                  onDateTimeChanged: (DateTime newDate) {
-                    setState(() {
-                      tempPickedDate = newDate;   //임시 날짜 업데이트
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    );
-  }
-
-  // void _selectDate(BuildContext context) async {
-  //   final DateTime? pickedDate = await showDatePicker(
-  //     context: context,
-  //     initialDate: DateTime(2000),  //기본 표시 날짜
-  //     firstDate: DateTime(1900),    //선택 가능한 가장 오랜 날짜
-  //     lastDate: DateTime.now(),     //선택 가능한 가장 늦은 날짜 -> 현재로 지정
-  //     helpText: '생년월일',         //다이얼로그 상단 문구
-  //     cancelText: '취소',           //취소 버튼 문구
-  //     confirmText: '확인',          //확인 버튼 문구
-  //   );
-
-  //   if (pickedDate != null && pickedDate != _dateTime) {
-  //     setState(() {
-  //       _dateTime = pickedDate;
-  //     });
-  //   }
-  // }
 
   @override
   void dispose() {
@@ -485,59 +404,7 @@ class _SignupPageState extends State<SignupPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 18,),
-              const Text("성별", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              // 첫 번째 라디오 버튼 (여성)
-              RadioListTile<String>(
-                title: const Text("여성"),
-                value: 'female',
-                groupValue: _sexValue,
-                onChanged: (String? value) {
-                  setState(() {
-                    _sexValue = value;
-                  });
-                },
-              ),
-              // 두 번째 라디오 버튼 (남성)
-              RadioListTile<String>(
-                title: const Text("남성"),
-                value: 'male',
-                groupValue: _sexValue,
-                onChanged: (String? value) {
-                  setState(() {
-                    _sexValue = value;
-                  });
-                },
-              ),
-              // 세 번째 라디오 버튼 (선택 안 함)
-              RadioListTile<String>(
-                title: const Text("선택 안 함"),
-                value: 'none',
-                groupValue: _sexValue,
-                onChanged: (String? value) {
-                  setState(() {
-                    _sexValue = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16,),
-              GestureDetector(
-                onTap: ()=>_showCupertinoDatePicker(context),
-                child: AbsorbPointer(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: '2000-01-01',
-                      suffixIcon: const Icon(Icons.calendar_today),
-                    ),
-                    controller: TextEditingController(
-                      text: _dateTime==null
-                      ? ''
-                      : "${_dateTime!.year}-${_dateTime!.month.toString().padLeft(2, '0')}-${_dateTime!.day.toString().padLeft(2, '0')}",
-                    ),
-                    readOnly: true,
-                  ),
-                ),
-              ),
+
               const SizedBox(height: 24,),
               ElevatedButton(
                 onPressed: _isLoading ? null : _signUp,   //로딩 중일 경우 버튼 비활성화
