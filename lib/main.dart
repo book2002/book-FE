@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/login_page.dart';   //login_page import
 import 'package:flutter_app/service/auth_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; 
 
 //하단 네비게이터로 전환될 screen import
 import 'screens/home_screen.dart';
@@ -23,6 +24,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 243, 245, 241)),
       ),
+
+      // 한국어 로컬라이제이션 설정 추가
+      locale: const Locale('ko', 'KR'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ko', 'KR'),
+        Locale('en', 'US'), // ( fallback )
+      ],
+
       home: const MyHomePage(title: ''),
     );
   }
