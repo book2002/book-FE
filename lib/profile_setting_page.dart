@@ -7,6 +7,9 @@ import 'package:http_parser/http_parser.dart'; // 1. http_parser 임포트
 import 'dart:convert';
 import 'package:intl/intl.dart'; // 날짜 포맷을 위해 추가
 
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
 // --- 1단계: 필수 정보 입력 페이지 (닉네임, 생년월일, 성별) ---
 class ProfileSetupPage extends StatefulWidget {
   const ProfileSetupPage({super.key});
@@ -36,7 +39,6 @@ class BirthDatePicker extends StatelessWidget {
         maximumDate: DateTime.now(),
         onDateTimeChanged: onDateTimeChanged,
         mode: CupertinoDatePickerMode.date,
-        //locale: const Locale('ko', 'KR'),
       ),
     );
   }
@@ -140,7 +142,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           const SnackBar(content: Text("인증 정보가 만료되었습니다. 다시 로그인해주세요.")),
         );
         // 로그인 페이지로 강제 이동 (모든 스택 제거 후 홈으로 이동 -> 홈에서 인증 체크)
-         Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(context).popUntil((route) => route.isFirst);
         return;
       }
 
@@ -356,6 +358,9 @@ class _BioSetupPageState extends State<BioSetupPage> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
+  File? _imageFile;   //이미지 파일 저장
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void dispose() {
     _bioController.dispose();
@@ -365,8 +370,23 @@ class _BioSetupPageState extends State<BioSetupPage> {
   // --- 홈 화면으로 이동 (로그인 스택 모두 제거) ---
   void _goToHome() {
     // 로그인 페이지, 1단계, 2단계 페이지를 모두 스택에서 제거하고 홈으로 이동
-    // ProfileSetupPage로 'true' 값을 반환합니다.
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      print("이미지를 가져오는 데 실패했습니다: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("이미지를 가져오는 데 실패했습니다: $e")),
+      );
+    }
   }
 
   // --- 2단계 제출 (Bio 정보 API 전송) ---
@@ -379,41 +399,72 @@ class _BioSetupPageState extends State<BioSetupPage> {
 
     setState(() { _isLoading = true; });
 
-    // try {
-    //   // TODO: API 호출
-    //   // 1단계와 마찬가지로 Authorization 헤더 필요
-    //   final url = Uri.parse(bioSetupApiUrl);
-    //   final response = await http.put( // 또는 POST
-    //     url,
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       // "Authorization": "Bearer YOUR_AUTH_TOKEN", // ✅ 실제 구현 시 주석 해제
-    //     },
-    //     body: jsonEncode({
-    //       "bio": _bioController.text,
-    //     }),
-    //   );
+    try {
+      // API 호출
+      final String? accessToken = await _authService.getAccessToken();
+      if (accessToken == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("인증 정보가 만료되었습니다.")),
+        );
+        _goToHome(); // 에러가 나도 일단 홈으로 보냄
+        return;
+      }
 
-    //   if (!mounted) return;
+      final url = Uri.parse(profileEditApiUrl);
+      var request = http.MultipartRequest('PUT', url);
 
-    //   if (response.statusCode == 200 || response.statusCode == 201) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text("자기소개가 저장되었습니다! 환영합니다.")),
-    //     );
-    //   } else {
-    //      ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text("자기소개 저장에 실패했습니다. (나중에 다시 시도해주세요)")),
-    //     );
-    //   }
-    // } catch (e) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(content: Text("오류 발생: $e")),
-    //   );
-    // } finally {
-    //   // API 성공/실패 여부와 관계없이 홈으로 이동
-    //   setState(() { _isLoading = false; });
-    //   _goToHome();
-    // }
+      request.headers['Authorization'] = "Bearer $accessToken";
+
+      Map<String, String?> dtoMap = {
+        "bio": _bioController.text,
+        // "nickname": null, // 백엔드가 닉네임도 받아야 한다면 1단계에서 닉네임을 전달받아 와야 함
+      };
+
+      request.files.add(
+        http.MultipartFile.fromString(
+          'request', // 백엔드 @RequestPart("request")
+          jsonEncode(dtoMap),
+          contentType: MediaType('application', 'json'),
+        ),
+      );
+
+      // 이미지가 있으면 'image' 파트로 추가
+      if (_imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', // 백엔드 @RequestPart("image")
+            _imageFile!.path,
+            contentType: MediaType('image', 'jpeg'), // (파일 형식에 맞게 조절)
+          ),
+        );
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("자기소개가 저장되었습니다! 환영합니다.")),
+        );
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody["message"] ?? "업데이트에 실패했습니다.";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("오류 발생: $e")),
+      );
+    } finally {
+      // API 성공/실패 여부와 관계없이 홈으로 이동
+      setState(() { _isLoading = false; });
+      _goToHome();
+    }
   }
 
   @override
@@ -449,22 +500,29 @@ class _BioSetupPageState extends State<BioSetupPage> {
             children: [
               const SizedBox(height: 20),
               Text(
-                "마지막 단계입니다. \n자신을 소개하는 글을 작성해보세요.",
+                "마지막 단계입니다. \n자신을 소개하는 프로필을 작성해보세요.",
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 40),
 
-              // --- (주석) 향후 프로필/헤더 이미지 추가 영역 ---
-              /*
-              Container(
-                height: 150,
-                color: Colors.grey.shade200,
-                child: Center(child: Text("프로필/헤더 이미지 업로더 영역")),
+              // ✅ 14. 이미지 피커 UI 추가
+              GestureDetector(
+                onTap: _pickImage,
+                child: Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey.shade200,
+                    backgroundImage:
+                        _imageFile != null ? FileImage(_imageFile!) : null,
+                    child: _imageFile == null
+                        ? Icon(Icons.camera_alt,
+                            color: Colors.grey.shade700, size: 40)
+                        : null,
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-              */
-              // --- (주석) ---
+              const SizedBox(height: 30),
 
               // --- Bio 입력 ---
               TextFormField(
