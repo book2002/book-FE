@@ -78,6 +78,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _logout() {
     _authService.logout();
+    //로그아웃 시, 탭 인덱스를 '홈' (index 2)으로 강제 이동
+    setState(() {
+      _selectedIndex = 2;
+    });
   }
 
   @override
