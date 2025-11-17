@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart'; // primaryColor, API URL 등
+import 'package:flutter_app/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart'; // 1. http_parser 임포트
 import 'dart:convert';
 import 'package:intl/intl.dart'; // 날짜 포맷을 위해 추가
-
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // --- 1단계: 필수 정보 입력 페이지 (닉네임, 생년월일, 성별) ---
 class ProfileSetupPage extends StatefulWidget {
@@ -54,8 +53,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   String? _selectedGender;
   bool _isLoading = false;
 
-  // Secure Storage 인스턴스 생성
-  final _storage = const FlutterSecureStorage();
+  // AuthService 인스턴스 생성
+  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
@@ -132,7 +131,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     try {
       // API 호출 전 토큰 읽어오기
-      final String? accessToken = await _storage.read(key: 'accessToken');
+      final String? accessToken = await _authService.getAccessToken();
 
       if (accessToken == null) {
         // 토큰이 없는 비정상 상황.
@@ -181,23 +180,20 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // 성공 시 2단계(Bio) 페이지로 이동
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("프로필 저장 성공! 다음 단계로 이동합니다.")),
-        );
-        Navigator.push(
+        Navigator.pushReplacement(    //profileSetupPage(1/2)를 스택에서 제거한 후 다음 단계로 이동
           context,
           MaterialPageRoute(builder: (context) => const BioSetupPage()),
         );
       } else {
         // 실패 시
         final errorBody = jsonDecode(response.body);
-        print(errorBody);
         final errorMessage = errorBody["message"] ?? "프로필 저장에 실패했습니다. (코드: ${response.statusCode})";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      print("오류 발생: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("오류 발생: $e")),
       );
@@ -357,6 +353,7 @@ class BioSetupPage extends StatefulWidget {
 
 class _BioSetupPageState extends State<BioSetupPage> {
   final _bioController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   @override
@@ -368,6 +365,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
   // --- 홈 화면으로 이동 (로그인 스택 모두 제거) ---
   void _goToHome() {
     // 로그인 페이지, 1단계, 2단계 페이지를 모두 스택에서 제거하고 홈으로 이동
+    // ProfileSetupPage로 'true' 값을 반환합니다.
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
@@ -452,6 +450,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
               const SizedBox(height: 20),
               Text(
                 "마지막 단계입니다. \n자신을 소개하는 글을 작성해보세요.",
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 40),

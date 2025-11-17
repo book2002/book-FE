@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart';
 import 'package:flutter_app/google_auth_webview.dart';
 import 'package:flutter_app/profile_setting_page.dart';
+import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_app/signup_page.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -26,8 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Secure Storage 인스턴스 생성
-  final _storage = const FlutterSecureStorage();
+  final AuthService _authService = AuthService();
 
   // 비밀번호 숨김/표시 상태 변수 추가
   bool _isPasswordObscured = true;
@@ -75,10 +75,11 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         
-        // 서버로부터 받은 토큰을 storage에 저장
+        // 서버로부터 받은 토큰을 AuthService로 storage에 저장
         final accessToken = data["accessToken"];
+        final refreshToken = data["refreshToken"];
         if (accessToken != null) {
-          await _storage.write(key: 'accessToken', value: accessToken);
+          await _authService.login(accessToken, refreshToken);
           print("토큰 저장 성공"); // 디버깅용
         } else {
           print("경고: 서버 응답에 accessToken이 없습니다.");
@@ -97,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           );
         } else {
-          Navigator.pop(context, true);   //로그인 성공 여부를 전달하며 홈화면으로 돌아감
+          Navigator.pop(context);   // 홈화면으로 돌아감
         }
 
       } else {
