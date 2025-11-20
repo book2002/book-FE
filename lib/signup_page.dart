@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_app/constants.dart';
+import 'package:flutter_app/models/auth_model.dart';
 
 import 'package:intl/intl.dart';          //DateFormat 사용을 위한 intl 패키지
 //flutter pub add intl로 다운로드 후 사용
@@ -130,8 +131,6 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _signUp() async {
-    //_showSignupSuccessDialog();
-
     final formState = _formKey.currentState;
     if (formState == null) {
       //form key 연결되지 않았을 경우 대비
@@ -163,27 +162,38 @@ class _SignupPageState extends State<SignupPage> {
     try {
       //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
       final url = Uri.parse(signupApiUrl);    //웹 환경에서는 localhost 사용
+
+      final memberRequest = MemberRequest(email: email, password: password, name: name);
       final response = await http.post(
         url,
         headers: {
           "Content-Type": "application/json",
         },
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-          "name": name,
-        }),
+        body: jsonEncode(memberRequest.toJson()),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // 응답 데이터를 MemberResponse 모델로 변환하여 처리
+        final jsonResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        final memberResponse = MemberResponse.fromJson(jsonResponse);
+
+        // 디버깅용 로그: 서버가 반환한 회원 ID와 상태 확인
+        print("회원가입 완료 - ID: ${memberResponse.memberId}, Status: ${memberResponse.status}");
+
         _showSignupSuccessDialog();   //회원가입 확인창
       } else {
         // 400 오류 등 다른 상태 코드 처리
-        final errorBody = (response.body);
-        //final errorMessage = errorBody["message"] ?? "알 수 없는 오류가 발생했습니다.";
+        String errorMessage = "회원가입에 실패했습니다.";
+        try {
+           final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
+           errorMessage = errorBody["message"] ?? errorMessage;
+        } catch (_) {
+           // JSON 파싱 실패 시 raw body 사용
+           errorMessage = response.body;
+        }
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorBody))
+          SnackBar(content: Text(errorMessage))
         );
       }
     } catch (e) {

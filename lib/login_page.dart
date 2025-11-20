@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart';
 import 'package:flutter_app/google_auth_webview.dart';
+import 'package:flutter_app/models/auth_model.dart';
 import 'package:flutter_app/profile_setting_page.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_app/signup_page.dart';
@@ -9,7 +10,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // JSON 인코딩/디코딩
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,7 +36,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     //메모리 누수 방지
     _idController.dispose();
     _passwordController.dispose();
@@ -59,27 +58,26 @@ class _LoginPageState extends State<LoginPage> {
     try {
       //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
       final url = Uri.parse(loginApiUrl);
+
+      final loginRequest = LoginRequest(email: email, password: password);
+
       final response = await http.post(
         url,
         headers: {
           "Content-Type": "application/json",
         },
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-        }),
+        body: jsonEncode(loginRequest.toJson()),
       );
 
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
+        final jsonResponse = jsonDecode(response.body);
+        final loginResponse = LoginResponse.fromJson(jsonResponse);
         
         // 서버로부터 받은 토큰을 AuthService로 storage에 저장
-        final accessToken = data["accessToken"];
-        final refreshToken = data["refreshToken"];
-        if (accessToken != null) {
-          await _authService.login(accessToken, refreshToken);
+        if (loginResponse.accessToken.isNotEmpty) {
+          await _authService.login(loginResponse.accessToken, loginResponse.refreshToken);
           print("토큰 저장 성공"); // 디버깅용
         } else {
           print("경고: 서버 응답에 accessToken이 없습니다.");
@@ -89,7 +87,8 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text("로그인 성공! $response"))
         );
 
-        if (data["newUser"]) {
+        // 모델의 isNewUser 필드로 NewUser 여부 확인
+        if (loginResponse.isNewUser) {
           //프로필 생성 화면으로 이동
           Navigator.pushReplacement( // 로그인 페이지로 다시 돌아오지 않도록 'Replacement' 사용
             context,
@@ -127,14 +126,14 @@ class _LoginPageState extends State<LoginPage> {
     //flutter_inappwebview 사용
 
     //웹뷰 이동 -> 결과 기다림
-    final result = await Navigator.push(
+    final googleToken = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GoogleAuthWebViewPage(initialUrl: googleApiUrl),
       ),
     );
 
-    if (result == true) {
+    if (googleToken != null) {
       if (mounted) {
         print("구글 로그인 시도");
       }
