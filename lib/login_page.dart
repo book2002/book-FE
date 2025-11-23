@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
-      final url = Uri.parse(loginApiUrl);
+      final url = Uri.parse("$baseUrl/api/v1/member/login");
 
       final loginRequest = LoginRequest(email: email, password: password);
 
@@ -87,8 +87,9 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text("로그인 성공! $response"))
         );
 
+        print(loginResponse.isNewUser);
         // 모델의 isNewUser 필드로 NewUser 여부 확인
-        if (loginResponse.isNewUser) {
+        if (!loginResponse.isNewUser) {
           //프로필 생성 화면으로 이동
           Navigator.pushReplacement( // 로그인 페이지로 다시 돌아오지 않도록 'Replacement' 사용
             context,
