@@ -249,6 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               context, 
                               MaterialPageRoute(
                                 builder: (context) => BookDetailPage(
+                                  isbn: book.isbn,
                                   title: book.title, 
                                   author: book.author, 
                                   thumbnail: book.thumbnail ?? "",

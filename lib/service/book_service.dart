@@ -85,9 +85,9 @@ class BookService {
     }
   }
 
-  // 내 서재(MyShelf) 조회 (GET /api/v1/books/myshelf)
+  // 내 서재(MyShelf) 조회 (GET /api/v1/books/my-shelf)
   Future<List<BookShelfItemDto>> getMyShelfBooks() async {
-    final url = Uri.parse('$baseUrl/api/v1/books/my-shelf/items');
+    final url = Uri.parse('$baseUrl/api/v1/my-shelf/items');
 
     try {
       final token = await _authService.getAccessToken();
@@ -114,6 +114,102 @@ class BookService {
     } catch (e) {
       print('내 서재 API 에러: $e');
       return [];
+    }
+  }
+
+  // 책장에 책 저장 (POST /api/my-shelf/items)
+  Future<BookShelfItemDto?> saveBookToShelf(BookSaveRequest requestDto) async {
+    // 요청 URL: POST /api/my-shelf/items
+    final url = Uri.parse('$baseUrl/api/v1/my-shelf/items');
+
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) {
+        print('책장 저장 실패: 로그인 필요');
+        return null;
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("책장 저장 성공: ${response.body}");
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        return BookShelfItemDto.fromJson(body);
+      } else {
+        // [디버깅] 오류 메시지 출력 (UTF-8 디코딩 시도)
+        try {
+           print("책장 저장 실패: ${utf8.decode(response.bodyBytes)}");
+        } catch (_) {
+           print("책장 저장 실패: ${response.statusCode}");
+        }
+        return null;
+      }
+    } catch (e) {
+      print('책장 저장 API 에러: $e');
+      return null;
+    }
+  }
+
+  // 저장된 도서 상태 변경 (PATCH api/my-shelf/items/{itemId}/state)
+  Future<bool> updateBookState(int itemId, BookStateUpdateRequest requestDto) async {
+    final url = Uri.parse('$baseUrl/api/v1/my-shelf/items/$itemId/state');
+
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.patch(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print("상태 변경 실패: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print('상태 변경 API 에러: $e');
+      return false;
+    }
+  }
+
+  // 저장된 도서 목록 삭제 (DELETE api/v1/my-shelf/{itemId})
+  Future<bool> deleteBookFromShelf(int itemId) async {
+    final url = Uri.parse('$baseUrl/api/v1/my-shelf/$itemId');
+
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        print("삭제 실패: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print('삭제 API 에러: $e');
+      return false;
     }
   }
 }

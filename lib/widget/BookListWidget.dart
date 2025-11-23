@@ -37,6 +37,7 @@ class BookListWidget extends StatelessWidget {
                 context, 
                 MaterialPageRoute(
                   builder: (context) => BookDetailPage(
+                    isbn: book.isbn,
                     title: book.title,
                     author: book.authorsString,
                     thumbnail: book.thumbnail.isNotEmpty ? book.thumbnail : "",
