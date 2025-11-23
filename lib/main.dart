@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 243, 245, 241)),
       ),
+      debugShowCheckedModeBanner: false,
 
       // 한국어 로컬라이제이션 설정 추가
       locale: const Locale('ko', 'KR'),
