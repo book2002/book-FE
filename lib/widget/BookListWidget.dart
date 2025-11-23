@@ -4,7 +4,7 @@ import 'package:flutter_app/models/book_model.dart';
 
 class BookListWidget extends StatelessWidget {
   //tabType -> 탭별 ui 재정을 위한 매개변수
-  final List<BookDto> books;
+  final List<dynamic> books;  // dynamic 설정으로 BookDto(검색)와 BookShelfItemDto(내 서재) 모두 사용
   final String tabType;
 
   const BookListWidget({
@@ -20,7 +20,41 @@ class BookListWidget extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(), // 외부 스크롤과 충돌 방지
       itemCount: books.length,
       itemBuilder: (context, index) {
-        final book = books[index];
+        final book = books[index] ?? [];
+
+        // 타입에 따라 필드 값을 추출
+        String title = '';
+        String author = '';
+        String thumbnail = '';
+        String isbn = '';
+        String description = '';
+        String publisher = '';
+        String publishedDate = '';
+
+        // 진행률 관련 (BookShelfItemDto에만 존재)
+        double progressValue = 0.0;
+        String progressPercent = '';
+
+        if (book is BookDto) {    // 검색 결과 / 베스트셀러 모델
+          title = book.title;
+          author = book.authorsString;
+          thumbnail = book.thumbnail;
+          isbn = book.isbn;
+          description = book.contents;
+          publisher = book.publisher;
+          publishedDate = book.datetime;
+        } else if (book is BookShelfItemDto) {  // 내 책장 아이템 모델
+          title = book.title;
+          author = book.author; // DTO 필드명이 다름 (author vs authors)
+          thumbnail = book.thumbnail ?? '';
+          isbn = book.isbn;
+          // 책장 목록 API에는 보통 상세 줄거리가 포함되지 않으므로 빈값 처리
+          description = ''; 
+          
+          // 진행률 계산
+          progressValue = book.progressValue;
+          progressPercent = book.progressPercent;
+        }
 
         return Card(
           shape: RoundedRectangleBorder(
@@ -37,13 +71,13 @@ class BookListWidget extends StatelessWidget {
                 context, 
                 MaterialPageRoute(
                   builder: (context) => BookDetailPage(
-                    isbn: book.isbn,
-                    title: book.title,
-                    author: book.authorsString,
-                    thumbnail: book.thumbnail.isNotEmpty ? book.thumbnail : "",
-                    description: book.contents, // 줄거리 전달
-                    publisher: book.publisher,  // 출판사 전달
-                    publishedDate: book.datetime, // 출판일 전달
+                    isbn: isbn,
+                    title: title,
+                    author: author,
+                    thumbnail: thumbnail.isNotEmpty ? thumbnail : "",
+                    description: description, // 줄거리 전달
+                    publisher: publisher,  // 출판사 전달
+                    publishedDate: publishedDate, // 출판일 전달
                   )
                 )
               );
@@ -86,12 +120,13 @@ class BookListWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          book.authorsString,
+                          author,
                           style: const TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 10),
 
-                        if (tabType == 'reading') ...[
+                        // [변경 사항] 탭 타입에 따른 UI 분기 로직
+                        if (tabType == 'reading' && book is BookShelfItemDto) ...[
                           const SizedBox(height: 60),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -100,15 +135,15 @@ class BookListWidget extends StatelessWidget {
                               Expanded(
                                 child: LinearProgressIndicator(
                                   borderRadius: BorderRadius.circular(16),
-                                  value: 0.65,
+                                  value: progressValue,   // 실제 진행률
                                   color: Colors.green,
                                   backgroundColor: Colors.grey[200],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
-                                "65%",
-                                style: TextStyle(fontSize: 10),
+                              Text(
+                                progressPercent,    // 실제 퍼센트
+                                style: TextStyle(fontSize: 12),
                               ),
                             ],
                           ),
