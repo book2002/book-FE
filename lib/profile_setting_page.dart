@@ -1,14 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart'; // primaryColor, API URL 등
+import 'package:flutter_app/models/profile_model.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; // 1. http_parser 임포트
+import 'package:http_parser/http_parser.dart'; // http_parser 임포트
 import 'dart:convert';
 import 'package:intl/intl.dart'; // 날짜 포맷을 위해 추가
 
-import 'dart:io';
+import 'dart:io';   // 네이티브용 FileImage를 위해 임포트
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // kIsWeb 임포트
 
 // --- 1단계: 필수 정보 입력 페이지 (닉네임, 생년월일, 성별) ---
 class ProfileSetupPage extends StatefulWidget {
@@ -148,7 +150,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       // API 호출
       // http.post 대신 http.MultipartRequest 사용
-      final url = Uri.parse(profileSetupApiUrl);
+      final url = Uri.parse("$baseUrl/api/v1/profile/create");
       var request = http.MultipartRequest('POST', url);
       
       // 헤더에 토큰 추가
@@ -156,20 +158,18 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       // 폼 유효성 검사를 통과했으므로 _dateTime과 _selectedGender는 null이 아님
       // --- 서버 DTO에 맞게 JSON 생성 ---
-      Map<String, String?> dtoMap = {
-        "nickname": _nicknameController.text,
-        // 'yyyyMMdd' 형식
-        "birth": _dateTime != null ? DateFormat('yyyyMMdd').format(_dateTime!) : null,
-        "gender": _selectedGender,
-        // 1단계에서는 bio를 빈 문자열으로 전송
-        "bio": "" 
-      };
+      final profileRequest = ProfileRequest(
+        nickname: _nicknameController.text, 
+        birth: _dateTime != null ? DateFormat('yyyyMMdd').format(_dateTime!) : "", 
+        gender: _selectedGender!, 
+        bio: "",    // 1단계에서는 bio 설정 x
+      );
 
-      // DTO Map을 JSON 문자열로 변환하여 'request' 파트로 추가
+      // 모델의 joJson 사용해 JSON 문자열로 변환하여 'request' 파트로 추가
       request.files.add(
         http.MultipartFile.fromString(
           'request',
-          jsonEncode(dtoMap),
+          jsonEncode(profileRequest.toJson()),
           contentType: MediaType('application', 'json')
         )
       );
@@ -181,10 +181,21 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // [변경] 응답 데이터를 ProfileResponse 객체로 변환 (검증 및 로깅용)
+        final jsonResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        final profileResponse = ProfileResponse.fromJson(jsonResponse);
+
+        if (!profileResponse.profileId.isNaN) {
+          await _authService.saveProfileId(profileResponse.profileId);
+          print("토큰 저장 성공"); // 디버깅용
+        } else {
+          print("경고: 서버 응답에 profileId가 없습니다.");
+        }
+
         // 성공 시 2단계(Bio) 페이지로 이동
         Navigator.pushReplacement(    //profileSetupPage(1/2)를 스택에서 제거한 후 다음 단계로 이동
           context,
-          MaterialPageRoute(builder: (context) => const BioSetupPage()),
+          MaterialPageRoute(builder: (context) => BioSetupPage(nickname: profileResponse.nickname)),
         );
       } else {
         // 실패 시
@@ -347,7 +358,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
 // --- 2단계: 선택 정보 입력 페이지 (Bio) ---
 class BioSetupPage extends StatefulWidget {
-  const BioSetupPage({super.key});
+  // 1단계에서 받아올 닉네임 변수 선언
+  final String nickname;
+
+  const BioSetupPage({super.key, required this.nickname});  // nickname 필수로 받음
 
   @override
   State<BioSetupPage> createState() => _BioSetupPageState();
@@ -358,7 +372,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
-  File? _imageFile;   //이미지 파일 저장
+  XFile? _imageXFile;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -378,7 +392,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
       final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         setState(() {
-          _imageFile = File(pickedFile.path);
+          _imageXFile = pickedFile;   // _imageXFile에 XFile 자체를 저장
         });
       }
     } catch (e) {
@@ -391,8 +405,8 @@ class _BioSetupPageState extends State<BioSetupPage> {
 
   // --- 2단계 제출 (Bio 정보 API 전송) ---
   Future<void> _submitStep2() async {
-    if (_bioController.text.trim().isEmpty) {
-      // Bio가 비어있으면 그냥 '완료' (홈으로)
+    if (_bioController.text.trim().isEmpty && _imageXFile == null) {
+      // Bio, 이미지가 비어있으면 그냥 '완료' (홈으로)
       _goToHome();
       return;
     }
@@ -418,7 +432,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
 
       Map<String, String?> dtoMap = {
         "bio": _bioController.text,
-        // "nickname": null, // 백엔드가 닉네임도 받아야 한다면 1단계에서 닉네임을 전달받아 와야 함
+        "nickname": widget.nickname,    //받아온 nickname 전달
       };
 
       request.files.add(
@@ -430,16 +444,27 @@ class _BioSetupPageState extends State<BioSetupPage> {
       );
 
       // 이미지가 있으면 'image' 파트로 추가
-      if (_imageFile != null) {
+      if (_imageXFile != null) {
+        final bytes = await _imageXFile!.readAsBytes();   // 파일의 바이트 데이터
+
+        // 확장자 추출 (예: image.png -> png)
+        String extension = _imageXFile!.path.split('.').last.toLowerCase();
+
+        // 기본값은 jpeg
+        String subtype = 'jpeg';
+        if (extension == 'png') subtype = 'png';
+
         request.files.add(
-          await http.MultipartFile.fromPath(
+          await http.MultipartFile.fromBytes(
             'image', // 백엔드 @RequestPart("image")
-            _imageFile!.path,
-            contentType: MediaType('image', 'jpeg'), // (파일 형식에 맞게 조절)
+            bytes,
+            filename: _imageXFile!.name,
+            contentType: MediaType('image', subtype), // (파일 형식에 맞게 조절)
           ),
         );
       }
 
+      print(request);
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
@@ -452,11 +477,13 @@ class _BioSetupPageState extends State<BioSetupPage> {
       } else {
         final errorBody = jsonDecode(response.body);
         final errorMessage = errorBody["message"] ?? "업데이트에 실패했습니다.";
+        print(errorMessage);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      print("오류 발생: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("오류 발생: $e")),
       );
@@ -500,22 +527,32 @@ class _BioSetupPageState extends State<BioSetupPage> {
             children: [
               const SizedBox(height: 20),
               Text(
-                "마지막 단계입니다. \n자신을 소개하는 프로필을 작성해보세요.",
+                "${widget.nickname}님, 마지막 단계입니다! \n자신을 소개하는 프로필을 작성해보세요.",
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 40),
 
-              // ✅ 14. 이미지 피커 UI 추가
+              // 이미지 피커 UI 추가
               GestureDetector(
                 onTap: _pickImage,
                 child: Center(
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey.shade200,
+
+                    // --- 플랫폼 분기 ---
                     backgroundImage:
-                        _imageFile != null ? FileImage(_imageFile!) : null,
-                    child: _imageFile == null
+                        _imageXFile == null
+                        ? null
+                        : kIsWeb
+                            // Web: blob URL이므로 NetworkImage 사용
+                            ? NetworkImage(_imageXFile!.path)
+                            // Native: 로컬 파일 경로이므로 FileImage 사용 (dart:io 필요)
+                            : FileImage(File(_imageXFile!.path))
+                                as ImageProvider, // 타입 명시
+
+                    child: _imageXFile == null
                         ? Icon(Icons.camera_alt,
                             color: Colors.grey.shade700, size: 40)
                         : null,

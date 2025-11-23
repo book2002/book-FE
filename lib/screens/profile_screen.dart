@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
+import 'package:flutter_app/service/auth_service.dart'; // AuthService
+import 'package:flutter_app/constants.dart'; // URL 상수
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -9,6 +13,68 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
+
+  // 프로필 데이터를 저장할 변수
+  Map<String, dynamic>? _profileData;
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfileData();
+  }
+
+  // 프로필 데이터 가져오는 함수
+  Future<void> _fetchProfileData() async {
+    try {
+      // accessToken으로 연결된 회원 정보 파악
+      final accessToken = await _authService.getAccessToken();
+      final profileId = await _authService.getProfileId();
+      // final profileId = await _authService.getProfileIdFromToken();
+
+      // if (accessToken == null || profileId == null) {
+      //   print("토큰이 없거나 ID를 추출할 수 없습니다.");
+      //   setState(() {
+      //     _isLoading = false;
+      //     _hasError = true;
+      //   });
+      //   return;
+      // }
+
+      final url = Uri.parse('$baseUrl/api/v1/profile/$profileId');
+      print("요청 URL: $url"); 
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $accessToken', // ✅ 서버는 이 토큰을 보고 누군지 압니다.
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _profileData = jsonDecode(utf8.decode(response.bodyBytes));   // utf-8 디코딩 -> 한글 깨짐 방지
+          _isLoading = false;
+        });
+      } else {
+        print("프로필 로드 실패: ${response.statusCode} - ${response.body}");
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+    } catch (e) {
+      print("프로필 로드 중 오류: $e");
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
   // 감상평 카드 위젯 빌더
   Widget _buildReviewCard(Map<String, dynamic> book) {
     return Card(
@@ -86,11 +152,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+    }
+
+    if (_hasError || _profileData == null) {
+      return const Scaffold(
+        body: Center(child: Text("프로필 정보를 불러오는데 실패했습니다.")),
+      );
+    }
+
+    // 데이터 바인딩
+    final String nickname = _profileData?['nickname'] ?? "알 수 없음";
+    final String bio = _profileData?['bio'] ?? "소개가 없습니다.";
+    final String? profileImageUrl = _profileData?['profileImageUrl']; 
+    final int followerCount = _profileData?['followerCount'] ?? 0;
+    final int followingCount = _profileData?['followingCount'] ?? 0;
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 248, 246, 243),
       body: CustomScrollView(
         slivers: [
-          // 🔹 상단 프로필 SliverAppBar
+          // 상단 프로필 SliverAppBar
           SliverAppBar(
             backgroundColor: Colors.grey[300],
             pinned: true,
@@ -106,38 +191,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 36,
                           backgroundColor: Colors.grey,
+                          backgroundImage: profileImageUrl != null
+                            ? NetworkImage(profileImageUrl)
+                            : null,
+                          child: profileImageUrl==null
+                            ? const Icon(Icons.person, size: 40, color: Colors.white,)
+                            : null,
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text("한 줄 바이오 설명글"),
-                              SizedBox(height: 3,),
+                            children: [
                               Text(
-                                "user name",
+                                nickname,
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
-                                "@user_id",
-                                style: TextStyle(color: Colors.grey),
+                                bio,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(right: 10),
                           child: Row(
                             children: [
-                              Text("팔로잉 0"),
+                              Text("팔로잉 $followingCount"),
                               SizedBox(width: 10),
-                              Text("팔로워 0"),
+                              Text("팔로워 $followerCount"),
                             ],
                           ),
                         ),
@@ -164,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
 
-          // 🔹 본문: 독서 현황 제목
+          // 본문: 독서 현황 제목
           // TODO: 공개 설정한 감상문만 보이도록 설정해야함
           SliverToBoxAdapter(
             child: Padding(
@@ -183,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final book = dummyBooks[index];
-                return _buildReviewCard(book);
+                // return _buildReviewCard(book);
               },
               childCount: dummyBooks.length,
             ),
