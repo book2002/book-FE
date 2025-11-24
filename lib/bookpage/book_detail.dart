@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/models/record_model.dart';
 import 'package:flutter_app/service/book_service.dart';
+import 'package:flutter_app/service/record_service.dart';
 
 class BookDetailPage extends StatefulWidget {
   final String isbn;  // api 요청에 필수적
@@ -26,18 +28,59 @@ class BookDetailPage extends StatefulWidget {
   State<BookDetailPage> createState() => _BookDetailPageState();
 }
 
-class _BookDetailPageState extends State<BookDetailPage> {
+// 탭 컨트롤러 사용을 위해 SingleTickerProviderStateMixin 추가
+class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProviderStateMixin {
   final BookService _bookService = BookService();
-  bool _isSaving = false; // 저장 중 로딩 상태
+  final RecordService _recordService = RecordService();
 
-  // 내 책장 포함 여부 관리
-  bool _isInShelf = false;
+  late TabController _tabController; // 탭 컨트롤러
+
+  bool _isSaving = false;   // 저장 중 로딩 상태
+  bool _isInShelf = false;  // 내 책장 포함 여부 관리
   BookShelfItemDto? _myShelfItem;   // 현재 저장된 아이템 정보
+
+  // 메모(기록) 데이터 리스트
+  List<ReviewResponse> _reviews = [];
+  List<SentenceResponse> _sentences = [];
+  bool _isLoadingRecords = false;
+
+  bool _isMenuOpen = false; // 플로팅 버튼 메뉴 확장 여부
+  bool _showFab = false; // FAB 표시 여부 (탭에 따라 변경)
 
   @override
   void initState() {
     super.initState();
-    _checkIfInShelf();
+
+    // 탭 컨트롤러 초기화 및 리스너 등록
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+
+    _checkIfInShelf().then((_) {
+      // 책장에 있는 책이라면 기록 데이터를 불러옴
+      if (_isInShelf && _myShelfItem != null) {
+        _fetchRecords();
+      }
+    });
+  }
+
+  // 탭 변경 시 호출되는 함수
+  void _handleTabSelection() {
+    // 탭이 변경되는 중이 아니라 완료되었을 때만 상태 업데이트
+    if (!_tabController.indexIsChanging) {
+      setState(() {
+        // 인덱스 1(독서 노트)일 때만 FAB 표시
+        _showFab = _tabController.index == 1;
+        // 탭을 옮기면 열려있던 메뉴는 닫음
+        _isMenuOpen = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    //컨트롤러 해제
+    _tabController.dispose(); 
+    super.dispose();
   }
 
   // 해당 책이 책장에 이미 존재하는지 확인하는 함수
@@ -61,6 +104,27 @@ class _BookDetailPageState extends State<BookDetailPage> {
       }
     } catch (e) {
       print("책장 확인 중 오류: $e");
+    }
+  }
+
+  // 감상문 및 문장 목록 불러오기
+  Future<void> _fetchRecords() async {
+    if (_myShelfItem == null) return;
+    setState(() { _isLoadingRecords = true; });
+
+    try {
+      final reviews = await _recordService.getReviewsByBookId(_myShelfItem!.itemId);
+      final sentences = await _recordService.getSentencesByBookId(_myShelfItem!.itemId);
+
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _sentences = sentences;
+          _isLoadingRecords = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _isLoadingRecords = false; });
     }
   }
 
@@ -372,174 +436,513 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
+  // 플로팅 버튼 메뉴 토글
+  void _toggleMenu() {
+    if (!_isInShelf) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("책장에 추가된 도서만 기록할 수 있습니다.")));
+      return;
+    }
+    setState(() {
+      _isMenuOpen = !_isMenuOpen;
+    });
+  }
+
+  // 별점 위젯 빌더
+  Widget _buildStarRating(double currentRating, Function(double) onRatingChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        return IconButton(
+          onPressed: () {
+            onRatingChanged(index + 1.0);
+          },
+          icon: Icon(
+            index < currentRating ? Icons.star : Icons.star_border,
+            color: Colors.amber,
+            size: 40,
+          ),
+        );
+      }),
+    );
+  }
+
+  // 감상문 작성 모달
+  void _showReviewModal(BuildContext context) {
+    double rating = 0.0;    // 기본 3점
+    bool isPublic = false;  // 공개 여부 변수
+    final contentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // 전체 화면 사용 가능하도록
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20, right: 20, top: 20
+              ),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.8, // 화면의 80% 높이 사용
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text("감상문 남기기", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    const SizedBox(height: 20),
+                    
+                    // 별점 영역
+                    _buildStarRating(rating, (newRating) {
+                      setModalState(() { rating = newRating; });
+                    }),
+                    const Center(child: Text("별점을 선택해주세요", style: TextStyle(color: Colors.grey))),
+                    const SizedBox(height: 20),
+
+                    // 공개 여부 설정 체크박스
+                    CheckboxListTile(
+                      title: const Text("전체 공개"),
+                      subtitle: const Text("다른 사용자들에게도 이 감상문을 공개합니다."),
+                      value: isPublic,
+                      activeColor: Colors.green,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (bool? value) {
+                        setModalState(() {
+                          isPublic = value ?? false;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
+                    // 내용 입력
+                    Expanded(
+                      child: TextField(
+                        controller: contentController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        decoration: InputDecoration(
+                          hintText: "이 책에 대한 감상을 자유롭게 적어보세요.",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (contentController.text.trim().isEmpty) return;
+                        Navigator.pop(context);
+                        
+                        // API 호출
+                        bool success = await _recordService.createReview(ReviewSaveRequest(
+                          itemId: _myShelfItem!.itemId,
+                          content: contentController.text,
+                          rating: rating,
+                          isPublic: isPublic,
+                        ));
+
+                        if (success) {
+                          _fetchRecords(); // 목록 갱신
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("감상문이 저장되었습니다.")));
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("저장 실패")));
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 16)),
+                      child: const Text("등록하기", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            );
+          }
+        );
+      }
+    );
+  }
+
+  // 문장 기록 모달
+  void _showSentenceModal(BuildContext context) {
+    final contentController = TextEditingController();
+    final pageController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20, right: 20, top: 20
+          ),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.5, // 화면 절반
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text("기억하고 싶은 문장", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                const SizedBox(height: 20),
+                
+                // 페이지 입력
+                TextField(
+                  controller: pageController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "페이지 (선택)",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 문장 입력
+                Expanded(
+                  child: TextField(
+                    controller: contentController,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      hintText: "인상 깊은 문장을 기록해보세요.",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                ElevatedButton(
+                  onPressed: () async {
+                    if (contentController.text.trim().isEmpty) return;
+                    Navigator.pop(context);
+                    
+                    // API 호출
+                    bool success = await _recordService.createSentence(SentenceSaveRequest(
+                      itemId: _myShelfItem!.itemId,
+                      content: contentController.text,
+                      page: int.tryParse(pageController.text) ?? 0,
+                    ));
+
+                    if (success) {
+                      _fetchRecords(); // 목록 갱신
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("문장이 저장되었습니다.")));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("저장 실패")));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: const Text("등록하기", style: TextStyle(color: Colors.white, fontSize: 16)),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,        //탭 개수
-      child:  Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
         appBar: AppBar(
           title: Text(widget.title),
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 1,
-          actions: [],
+          // actions: [],
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              //상단
-              Container(
-                height: 300,
-                padding: const EdgeInsets.only(left: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    //책 표지
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        widget.thumbnail,
-                        height: 250,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 250, width: 170, 
-                            color: Colors.grey[300], 
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey)
-                          );
-                        },
-                      ),
-                    ),
-                    //책 정보
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 30),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            //제목
-                            Text(
-                              widget.title,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              //textAlign: TextAlign.center,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 10,),
-                            //저자
-                            Text(
-                              widget.author,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 10,),
-                            // 출판사 및 출판일 표시 추가
-                            if (widget.publisher.isNotEmpty)
-                              Text(
-                                widget.publisher,
-                                style: const TextStyle(fontSize: 14, color: Colors.black54),
-                              ),
-                              const SizedBox(height: 10,),
-                            if (widget.publishedDate.isNotEmpty)
-                              Text(
-                                widget.publishedDate.length >= 10 
-                                    ? widget.publishedDate.substring(0, 10) // 날짜 포맷 (YYYY-MM-DD)
-                                    : widget.publishedDate,
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                              const SizedBox(height: 10,),
-
-                            // 책장 추가 버튼
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                if (_isInShelf) {
-                                  // 이미 추가된 경우 -> 수정/삭제 모달
-                                  _showActionModal(context);
-                                } else {
-                                  // 없는 경우 -> 추가 모달
-                                  _showShelfModal(context, isEdit: false);
-                                }
-                              }, 
-                              icon: Icon(_isInShelf ? Icons.bookmark : Icons.bookmark_outline),   // 책장 추가 여부에 따라 아이콘 지정
-                              label: Text(_isInShelf ? "저장됨" : "책장에 추가"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                )
-                              )
-                            )
-                          ],
+        body: Stack(
+          
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  //상단 : 책 정보 영역
+                  Container(
+                    height: 300,
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        //책 표지
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            widget.thumbnail,
+                            height: 250,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 250, width: 170, 
+                                color: Colors.grey[300], 
+                                child: const Icon(Icons.broken_image, size: 50, color: Colors.grey)
+                              );
+                            },
+                          ),
                         ),
-                      )
+                        //책 정보
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 30),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                //제목
+                                Text(
+                                  widget.title,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  //textAlign: TextAlign.center,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 10,),
+                                //저자
+                                Text(
+                                  widget.author,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 10,),
+                                // 출판사 및 출판일 표시 추가
+                                if (widget.publisher.isNotEmpty)
+                                  Text(
+                                    widget.publisher,
+                                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                                  ),
+                                  const SizedBox(height: 10,),
+                                if (widget.publishedDate.isNotEmpty)
+                                  Text(
+                                    widget.publishedDate.length >= 10 
+                                        ? widget.publishedDate.substring(0, 10) // 날짜 포맷 (YYYY-MM-DD)
+                                        : widget.publishedDate,
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 10,),
+
+                                // 책장 추가 버튼
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    if (_isInShelf) {
+                                      // 이미 추가된 경우 -> 수정/삭제 모달
+                                      _showActionModal(context);
+                                    } else {
+                                      // 없는 경우 -> 추가 모달
+                                      _showShelfModal(context, isEdit: false);
+                                    }
+                                  }, 
+                                  icon: Icon(_isInShelf ? Icons.bookmark : Icons.bookmark_outline),   // 책장 추가 여부에 따라 아이콘 지정
+                                  label: Text(_isInShelf ? "저장됨" : "책장에 추가"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    )
+                                  )
+                                )
+                              ],
+                            ),
+                          )
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  
+                  //const SizedBox(height: 10,),
+                  
+                  //하단 탭 윈도우
+                  TabBar(
+                    controller: _tabController,       // 컨트롤러 연결
+                    labelColor: Colors.black,
+                    indicatorColor: Colors.green,
+                    tabs:[
+                      Tab(text: "책 정보",),
+                      Tab(text: "독서 노트",),
+                    ] 
+                  ),
+
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        //책 정보
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            widget.description.isNotEmpty 
+                                ? widget.description 
+                                : '상세 설명이 없습니다.',
+                            style: const TextStyle(fontSize: 14, height: 1.5), // 줄간격 추가
+                            textAlign: TextAlign.justify, // 양쪽 정렬
+                          ),
+                        ),
+                        //독서 노트
+                        _isLoadingRecords 
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_reviews.isEmpty && _sentences.isEmpty)
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 50),
+                                    child: Center(child: Text('작성한 독서 노트가 없어요.\n+ 버튼을 눌러 기록을 남겨보세요!', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey))),
+                                  ),
+
+                                // 감상문 리스트
+                                if (_reviews.isNotEmpty) ...[
+                                  const Text("📄 감상문", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                  const SizedBox(height: 10),
+                                  ..._reviews.map((review) => Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100], // 연한 회색 배경
+                                      borderRadius: BorderRadius.circular(12), // 둥근 모서리
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            // 별점 표시
+                                            Row(
+                                              children: List.generate(5, (i) => Icon(
+                                                i < review.rating ? Icons.star : Icons.star_border,
+                                                color: Colors.amber, size: 16
+                                              )),
+                                            ),
+                                            Text(review.createdAt.split('T')[0], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(review.content, style: const TextStyle(fontSize: 15)),
+                                      ],
+                                    ),
+                                  )),
+                                  const SizedBox(height: 20),
+                                ],
+
+                                // 문장 리스트
+                                if (_sentences.isNotEmpty) ...[
+                                  const Text("🔖 기억하고 싶은 문장", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                  const SizedBox(height: 10),
+                                  ..._sentences.map((sentence) => Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.format_quote, color: Colors.green, size: 20),
+                                            const SizedBox(width: 8),
+                                            Text("p.${sentence.page}", style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                            const Spacer(),
+                                            Text(sentence.createdAt.split('T')[0], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(sentence.content, style: const TextStyle(fontSize: 15, fontStyle: FontStyle.italic)),
+                                      ],
+                                    ),
+                                  )),
+                                ]
+                              ],
+                            ),
+                          ),
+                      ]
+                    ),
+                  ),
+
+                ],
+              ),
+            ),
+
+            // 플로팅 버튼 메뉴 오버레이
+            if (_isMenuOpen && _showFab)    // _showFab -> 독서 노트 탭일 때만 플로팅 버튼 표시
+              Positioned(
+                bottom: 90, // FAB 위쪽
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, spreadRadius: 2)],
+                  ),
+                  child: Column(
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          _toggleMenu();
+                          _showReviewModal(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.edit_note, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text("감상문 쓰기", style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Divider(height: 1, color: Colors.grey[300]),
+                      InkWell(
+                        onTap: () {
+                          _toggleMenu();
+                          _showSentenceModal(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.short_text, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text("문장 기록  ", style: TextStyle(fontWeight: FontWeight.bold)), // 간격 맞춤용 공백
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              
-              //const SizedBox(height: 10,),
-              
-              //하단 탭 윈도우
-              const TabBar(
-                labelColor: Colors.black,
-                indicatorColor: Colors.green,
-                tabs:[
-                  Tab(text: "책 정보",),
-                  Tab(text: "독서 노트",),
-                ] 
-              ),
-
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    //책 정보
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        widget.description.isNotEmpty 
-                            ? widget.description 
-                            : '상세 설명이 없습니다.',
-                        style: const TextStyle(fontSize: 14, height: 1.5), // 줄간격 추가
-                        textAlign: TextAlign.justify, // 양쪽 정렬
-                      ),
-                    ),
-                    //독서 노트
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      //TODO: 가운데 정렬 구현
-                      child: const Text(
-                        '작성한 독서 노트가 없어요. 노트를 추가해보세요!',
-                        style: TextStyle(fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ]
-                ),
-              ),
-
-            ],
-          ),
+          ],
         ),
+        
         //독서노트 탭을 클릭했을 때만 해당 버튼이 출력되도록 변경
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-
-          },
-          child: Icon(Icons.add, color: Colors.white,),
+        floatingActionButton: _showFab ? FloatingActionButton(
+          onPressed: _toggleMenu,
           backgroundColor: Colors.green,
           elevation: 0,
           shape: CircleBorder(),
-        ),
-      )
-
-    );
+          child: Icon(_isMenuOpen ? Icons.close : Icons.add, color: Colors.white),
+        ) : null
+      );
   }
 }
