@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
 
@@ -13,6 +15,43 @@ class BooklistScreen extends StatefulWidget {
 }
 
 class _BooklistScreenState extends State<BooklistScreen> {
+  final BookService _bookService = BookService();
+  
+  List<BookShelfItemDto> _readingBooks = [];      // 읽는 중
+  List<BookShelfItemDto> _wantToReadBooks = [];   // 읽기 전
+  List<BookShelfItemDto> _completedBooks = [];    // 다 읽은
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchShelfBooks();
+  }
+
+  // 책장 데이터 가져오기 및 상태별 분류 함수
+  Future<void> _fetchShelfBooks() async {
+    setState(() { _isLoading = true; });
+    try {
+      // 전체 목록 조회
+      final allBooks = await _bookService.getMyShelfBooks();
+
+      // 상태(State)별 필터링
+      // 상태 코드: READING, WANT_TO_READ, COMPLETED (백엔드와 일치해야 함)
+      if (mounted) {
+        setState(() {
+          _readingBooks = allBooks.where((b) => b.state == 'READING').toList();
+          _wantToReadBooks = allBooks.where((b) => b.state == 'WANT_TO_READ').toList();
+          _completedBooks = allBooks.where((b) => b.state == 'COMPLETED').toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("책장 로드 실패: $e");
+      if (mounted) setState(() { _isLoading = false; });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -35,9 +74,28 @@ class _BooklistScreenState extends State<BooklistScreen> {
             Expanded(
               child: TabBarView(
                 children: [
-                  BookListWidget(books: dummyBooks, tabType: 'reading'),
-                  BookListWidget(books: dummyBooks, tabType: 'before'),
-                  BookListWidget(books: dummyBooks, tabType: 'done'),
+                  // 화면 갱신(당겨서 새로고침) 기능을 넣으려면 RefreshIndicator 감싸기 권장
+                  RefreshIndicator(
+                    onRefresh: _fetchShelfBooks,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: BookListWidget(books: _readingBooks, tabType: 'reading'),
+                    ),
+                  ),
+                  RefreshIndicator(
+                    onRefresh: _fetchShelfBooks,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: BookListWidget(books: _wantToReadBooks, tabType: 'before'),
+                    ),
+                  ),
+                  RefreshIndicator(
+                    onRefresh: _fetchShelfBooks,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: BookListWidget(books: _completedBooks, tabType: 'done'),
+                    ),
+                  ),
                 ]
               ),
             ),
