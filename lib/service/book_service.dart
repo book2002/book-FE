@@ -5,7 +5,7 @@ import 'package:flutter_app/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 
 class BookService {
-  // [설정] 백엔드 서버 주소 (실제 서버 IP나 도메인으로 변경 필요)
+  // 모든 기능 로그인 전제로 수행됨
   // 안드로이드 에뮬레이터: 10.0.2.2, iOS 시뮬레이터: 127.0.0.1
   final AuthService _authService = AuthService();
 
@@ -14,7 +14,6 @@ class BookService {
     final url = Uri.parse('$baseUrl/api/v1/books/search').replace(queryParameters: {'query': query});
 
     try {
-      // 검색은 비로그인 상태에서도 가능하다고 가정 (토큰 있으면 포함)
       final token = await _authService.getAccessToken();
       final headers = {
         'Content-Type': 'application/json',
@@ -46,7 +45,13 @@ class BookService {
     final url = Uri.parse('$baseUrl/api/v1/books/bestseller');
 
     try {
-      final response = await http.get(url);
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
         // UTF-8 디코딩 처리 (한글 깨짐 방지)
@@ -68,7 +73,13 @@ class BookService {
     final url = Uri.parse('$baseUrl/api/v1/books/new-releases');
     // ... (위와 동일한 로직)
     try {
-      final response = await http.get(url);
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
         // UTF-8 디코딩 처리 (한글 깨짐 방지)

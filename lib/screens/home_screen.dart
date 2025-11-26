@@ -52,8 +52,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 결과 할당 (타입 캐스팅 주의)
       final allShelfBooks = results[0] as List<BookShelfItemDto>;
-      final bestsellers = results[1] as List<BookDto>;
-      final newReleases = results[2] as List<BookDto>;
+      final newReleases = results[1] as List<BookDto>;
+      final bestsellers = results[2] as List<BookDto>;
 
       if (mounted) {
         setState(() {
@@ -282,18 +282,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 20,),
             
-            // --- 베스트셀러 (추천 도서) ---
-            Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: Text("🔥 이번 주 베스트셀러",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                )
-              ),
-            ),
-            _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : BookListWidget(books: _bestSellerBooks, tabType: 'before'),
+            // --- 베스트셀러 ---
+            // Padding(
+            //   padding: const EdgeInsets.only(left: 10),
+            //   child: Text("🔥 이번 주 베스트셀러",
+            //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            //             fontWeight: FontWeight.bold,
+            //     )
+            //   ),
+            // ),
+            // _isLoading
+            //   ? const Center(child: CircularProgressIndicator())
+            //   : BookListWidget(books: _bestSellerBooks, tabType: 'before'),
 
           ]
 

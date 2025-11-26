@@ -55,7 +55,7 @@ class AuthService {
         return;
     }
   }
-
+  
   // 로그인 시 호출 (LoginPage에서 사용)
   Future<void> login(String accessToken, String refreshToken) async {
     await _storage.write(key: 'accessToken', value: accessToken);
@@ -73,4 +73,19 @@ class AuthService {
     isLoggedInNotifier.value = false;
     print("AuthService: 로그아웃 성공. 상태 변경 알림.");
   }
+
+  Future<void> saveProfileId(int profileId) async {
+    await _storage.write(key: 'profileId', value: "$profileId");
+    print("profileId 저장 성공");
+  }
+
+  Future<String?> getProfileId() async {
+    try {
+      return await _storage.read(key: 'profileId');
+    } catch (e) {
+      print("AuthService(getProfileId) 오류: $e");
+      return null;
+    }
+  }
+
 }
