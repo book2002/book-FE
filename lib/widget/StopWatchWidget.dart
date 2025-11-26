@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/constants.dart';
 
 class StopwatchWidget extends StatefulWidget {
   const StopwatchWidget({Key? key}) : super(key: key);
@@ -63,31 +64,45 @@ class _StopwatchWidgetState extends State<StopwatchWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(width: 1, color: Colors.grey),
+        border: Border.all(width: 1, color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "독서 타이머",
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Text(
+                "독서 타이머",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(width: 15,),
+              Text(
+                "집중 모드",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
           ),
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // 🔹 시:분:초 표시
               Text(
                 _formatTime(),
-                style: const TextStyle(
-                  fontSize: 50,
+                style: TextStyle(
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
                   fontFeatures: [FontFeature.tabularFigures()],
+                  color: _isRunning ? Colors.black : Colors.grey,
                 ),
               ),
 
@@ -99,12 +114,12 @@ class _StopwatchWidgetState extends State<StopwatchWidget> {
                     icon: Icon(
                       _isRunning ? Icons.pause_circle_filled : Icons.play_circle_fill,
                       color: _isRunning ? Colors.orange : Colors.green,
-                      size: 40,
+                      size: 25,
                     ),
                   ),
                   IconButton(
                     onPressed: _resetTimer,
-                    icon: const Icon(Icons.refresh, color: Colors.grey, size: 35),
+                    icon: const Icon(Icons.refresh, color: Colors.grey, size: 20),
                   ),
                 ],
               ),
