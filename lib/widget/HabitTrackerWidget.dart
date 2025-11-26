@@ -59,16 +59,12 @@ class _HabitTrackerState extends State<HabitTracker> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final circleSize = screenWidth/7-35;
+    print(circleSize);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // const Text(
-        //   '이번 주 목표 달성 현황',
-        //   style: TextStyle(
-        //     fontSize: 18,
-        //     fontWeight: FontWeight.bold,
-        //   ),
-        // ),
         const SizedBox(height: 16),
 
         // 해빗트래커 표시 영역
@@ -90,7 +86,7 @@ class _HabitTrackerState extends State<HabitTracker> {
                     const SizedBox(height: 6),
                     // 원형 아이콘
                     CircleAvatar(
-                      radius: isToday ? 22 : 22,
+                      radius: isToday ? circleSize : circleSize,
                       backgroundColor: isChecked
                           ? Colors.green
                           : Colors.grey[300],
@@ -114,7 +110,7 @@ class _HabitTrackerState extends State<HabitTracker> {
           }),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
 
         // 오늘 체크 버튼
         ElevatedButton(
@@ -126,13 +122,30 @@ class _HabitTrackerState extends State<HabitTracker> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
           ),
           child: const Text(
-            "오늘의 목표 달성 체크하기",
-            style: TextStyle(fontSize: 20, color: Colors.white, ),
+            "오늘의 독서 기록하기",
+            style: TextStyle(fontSize: 12, color: Colors.white, ),
           ),
         ),
+        SizedBox(height: 12,),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "독서 달력 확인하기",
+              style: TextStyle(
+                color: Colors.grey
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_right_rounded,
+              color: Colors.grey[300],
+            )
+          ],
+        )
       ],
     );
   }
