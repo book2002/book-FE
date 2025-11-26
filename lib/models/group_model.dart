@@ -38,6 +38,28 @@ class GroupResponse {
   }
 }
 
+// 모임 생성 요청 DTO
+class GroupCreateRequest {
+  final String name;
+  final String description;
+  final String goal;
+  final int maxMembers;
+
+  GroupCreateRequest({
+    required this.name,
+    required this.description,
+    required this.goal,
+    required this.maxMembers,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'goal': goal,
+    'maxMembers': maxMembers,
+  };
+}
+
 class GroupPostResponse {
   final int postId;
   final int groupId;
