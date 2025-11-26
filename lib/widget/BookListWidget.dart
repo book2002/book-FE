@@ -5,6 +5,7 @@ import 'package:flutter_app/models/book_model.dart';
 class BookListWidget extends StatelessWidget {
   //tabType -> 탭별 ui 재정을 위한 매개변수
   final List<dynamic> books;  // dynamic 설정으로 BookDto(검색)와 BookShelfItemDto(내 서재) 모두 사용
+
   final String tabType;
 
   const BookListWidget({

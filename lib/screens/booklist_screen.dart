@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/book_model.dart';
 import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/testdata/book_dummy.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
 
 class BooklistScreen extends StatefulWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
+import 'package:flutter_app/models/book_model.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
 
 import 'package:http/http.dart' as http;
@@ -300,5 +301,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+
   }
 }

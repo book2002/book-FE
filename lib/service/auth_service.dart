@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart'; // ValueNotifier를 위해 임포트
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -13,16 +15,13 @@ class AuthService {
 
   final _storage = const FlutterSecureStorage();
 
-  // 'isLoggedIn' 상태를 관찰(Listen)할 수 있는 Notifier
-  // false로 시작
+  // 'isLoggedIn' 상태를 관찰(Listen)할 수 있는 Notifier false로 시작
   final ValueNotifier<bool> isLoggedInNotifier = ValueNotifier<bool>(false);
-
   // 현재 로그인 상태인지 (외부에서 .value로 접근)
   bool get isLoggedIn => isLoggedInNotifier.value;
 
     // API 호출을 위한 AccessToken 게터 ---
   Future<String?> getAccessToken() async {
-    // TODO: (고급) 여기서 accessToken의 만료 시간을 체크하고, 만료되었다면 새 토큰을 반환하는 기능 추가
     try {
       return await _storage.read(key: 'accessToken');
     } catch (e) {
@@ -76,7 +75,7 @@ class AuthService {
 
   Future<void> saveProfileId(int profileId) async {
     await _storage.write(key: 'profileId', value: "$profileId");
-    print("profileId 저장 성공");
+    print("profile 아이디 저장 완료. profileId : $profileId");
   }
 
   Future<String?> getProfileId() async {
@@ -88,4 +87,42 @@ class AuthService {
     }
   }
 
+  // JWT 토큰에서 profileId 추출
+  Future<String?> getProfileIdFromToken() async {
+    try {
+      final token = await getAccessToken();
+      if (token == null) return null;
+
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      // Payload 부분 (두 번째 부분) 디코딩
+      final payload = _decodeBase64(parts[1]);
+      final payloadMap = json.decode(payload);
+
+      print("토큰 Payload 데이터: $payloadMap"); // 디버깅용: 콘솔에서 키 이름을 확인
+
+      if (payloadMap is Map<String, dynamic>) {
+        // 1순위: profileId, 2순위: id, 3순위: sub
+        return payloadMap['profileId']?.toString() ?? 
+               payloadMap['id']?.toString() ?? 
+               payloadMap['sub']?.toString();
+      }
+      return null;
+    } catch (e) {
+      print("토큰 디코딩 실패: $e");
+      return null;
+    }
+  }
+
+  String _decodeBase64(String str) {
+    String output = str.replaceAll('-', '+').replaceAll('_', '/');
+    switch (output.length % 4) {
+      case 0: break;
+      case 2: output += '=='; break;
+      case 3: output += '='; break;
+      default: throw Exception('Illegal base64url string!"');
+    }
+    return utf8.decode(base64Url.decode(output));
+  }
 }

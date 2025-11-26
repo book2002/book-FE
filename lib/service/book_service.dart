@@ -41,6 +41,7 @@ class BookService {
 
   // [기능] 추천 도서 (베스트셀러) 조회 연결
   // HTTP Method: GET /api/v1/books/bestseller
+  // Return: List<BookDto>
   Future<List<BookDto>> getBestsellers() async {
     final url = Uri.parse('$baseUrl/api/v1/books/bestseller');
 
