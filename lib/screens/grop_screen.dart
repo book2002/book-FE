@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/screens/details/group_info_page.dart';
 import 'package:flutter_app/testdata/group_dummy.dart';
 
 class GroupScreen extends StatefulWidget {
@@ -104,7 +105,7 @@ class _GroupScreenState extends State<GroupScreen> {
                             ),
                             onTap: () {
                               // TODO: 모임 페이지로 이동
-                              
+                              Navigator.push(context, MaterialPageRoute(builder: (context)=>const GroupInfoPage()));
                             },
                           ),
                         ),

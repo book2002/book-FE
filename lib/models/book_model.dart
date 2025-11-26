@@ -30,7 +30,6 @@ class BookDto {
       contents: json['contents'] ?? '',
     );
   }
-
   // UI 표시용 저자 문자열 (예: "저자1, 저자2")
   String get authorsString => authors.isNotEmpty ? authors.join(", ") : "저자 미상";
 }

@@ -1,4 +1,5 @@
 // 백엔드 명세에 맞춰 DTO 수정 및 SentenceSaveRequest 추가
+// 감상문 + 문장 기록
 
 class ReviewResponse {
   final int reviewId;
