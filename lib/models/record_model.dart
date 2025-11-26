@@ -25,7 +25,7 @@ class ReviewResponse {
       content: json['content'] ?? '',
       bookTitle: json['bookTitle'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
-      isPublic: json['isPublic'] ?? false,
+      isPublic: json['isPublic'] ?? json['public'] ?? false,    // isPublic 필드 우선 확인 후, 없으면 public 필드 확인
       createdAt: json['createdAt'] ?? '',
       itemId: json['itemId'] ?? 0,
     );
@@ -49,7 +49,29 @@ class ReviewSaveRequest {
     'itemId': itemId,
     'content': content,
     'rating': rating,
+    'public': isPublic,
+  };
+}
+
+// 감상문 수정 요청 DTO
+class ReviewUpdateRequest {
+  final String content;
+  final double rating;
+  final bool isPublic;
+  final int itemId;
+
+  ReviewUpdateRequest({
+    required this.content,
+    required this.rating,
+    required this.isPublic,
+    required this.itemId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'content': content,
+    'rating': rating,
     'isPublic': isPublic,
+    'itemId': itemId,
   };
 }
 
@@ -82,13 +104,32 @@ class SentenceResponse {
   }
 }
 
-// [신규] 문장 저장 요청 DTO 추가
+// 문장 저장 요청 DTO 추가
 class SentenceSaveRequest {
   final int itemId;
   final String content;
   final int page;
 
   SentenceSaveRequest({
+    required this.itemId,
+    required this.content,
+    required this.page,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'itemId': itemId,
+    'content': content,
+    'page': page,
+  };
+}
+
+// 문장 수정 요청 DTO
+class SentenceUpdateRequest {
+  final int itemId;
+  final String content;
+  final int page;
+
+  SentenceUpdateRequest({
     required this.itemId,
     required this.content,
     required this.page,

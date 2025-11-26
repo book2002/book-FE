@@ -14,6 +14,7 @@ class RecordService {
   // [1] 감상문 저장 (POST /api/v1/reviews/write)
   Future<bool> createReview(ReviewSaveRequest request) async {
     final url = Uri.parse('$baseUrl/api/v1/reviews/write');
+    print(request.toJson());
     try {
       final token = await _authService.getAccessToken();
       if (token == null) return false;
@@ -26,6 +27,7 @@ class RecordService {
         },
         body: jsonEncode(request.toJson()),
       );
+      print(response.body);
 
       return (response.statusCode == 200 || response.statusCode == 201);
     } catch (e) {
@@ -34,7 +36,7 @@ class RecordService {
     }
   }
 
-  // [2] 감상문 목록 조회 (GET /api/v1/reviews/book/{itemId})
+  // [2] 감상문 목록 조회 (GET /api/v1/reviews/book/{itemId}) - 특정 도서 감상문 목록 조회
   Future<List<ReviewResponse>> getReviewsByBookId(int itemId) async {
     final url = Uri.parse('$baseUrl/api/v1/reviews/book/$itemId');
     try {
@@ -61,6 +63,52 @@ class RecordService {
     } catch (e) {
       print("감상문 조회 오류: $e");
       return [];
+    }
+  }
+  
+  // 감상문 수정 (PATCH /api/v1/reviews/{reviewId})
+  Future<bool> updateReview(int reviewId, ReviewUpdateRequest request) async {
+    final url = Uri.parse('$baseUrl/api/v1/reviews/$reviewId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(request.toJson()),
+      );
+      print(response.body);
+
+      return (response.statusCode == 200);
+    } catch (e) {
+      print("감상문 수정 오류: $e");
+      return false;
+    }
+  }
+
+  // 감상문 삭제 (DELETE /api/v1/reviews/{reviewId})
+  Future<bool> deleteReview(int reviewId) async {
+    final url = Uri.parse('$baseUrl/api/v1/reviews/$reviewId');
+    print(reviewId);
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return (response.statusCode == 200 || response.statusCode == 204);
+    } catch (e) {
+      print("감상문 삭제 오류: $e");
+      return false;
     }
   }
 
@@ -115,6 +163,53 @@ class RecordService {
     } catch (e) {
       print("문장 조회 오류: $e");
       return [];
+    }
+  }
+
+  // 문장 수정 (PUT /api/v1/sentences/{sentenceId})
+  Future<bool> updateSentence(int sentenceId, SentenceUpdateRequest request) async {
+    final url = Uri.parse('$baseUrl/api/v1/sentences/$sentenceId');
+    print(request.toJson());
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(request.toJson()),
+      );
+
+      print(response.body);
+
+      return (response.statusCode == 200);
+    } catch (e) {
+      print("문장 수정 오류: $e");
+      return false;
+    }
+  }
+
+  // 문장 삭제 (DELETE /api/v1/sentences/{sentenceId})
+  Future<bool> deleteSentence(int sentenceId) async {
+    final url = Uri.parse('$baseUrl/api/v1/sentences/$sentenceId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return (response.statusCode == 200 || response.statusCode == 204);
+    } catch (e) {
+      print("문장 삭제 오류: $e");
+      return false;
     }
   }
 }
