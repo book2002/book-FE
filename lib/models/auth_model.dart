@@ -30,7 +30,7 @@ class LoginResponse {
       grantType: json['grantType'] ?? '',
       accessToken: json['accessToken'] ?? '',
       refreshToken: json['refreshToken'] ?? '',
-      isNewUser: json['isNewUser'] ?? false, // BE: isNewUser 필드 확인 필요 (Lombok getter 이슈 가능성)
+      isNewUser: json['newUser'] ?? false,
     );
   }
 }
