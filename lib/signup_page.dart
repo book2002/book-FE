@@ -161,7 +161,7 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
-      final url = Uri.parse(signupApiUrl);    //웹 환경에서는 localhost 사용
+      final url = Uri.parse("$baseUrl/api/v1/member/signup");    //웹 환경에서는 localhost 사용
 
       final memberRequest = MemberRequest(email: email, password: password, name: name);
       final response = await http.post(
