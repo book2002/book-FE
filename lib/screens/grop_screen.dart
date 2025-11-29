@@ -79,9 +79,8 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   // 모임 상세 페이지 이동 함수 (가입 여부 확인)
-  void _goToGroupInfo(GroupResponse group) {
-    // 1. 로그인이 안되어 있거나
-    // 2. 가입하지 않은 그룹인 경우 접근 제한
+  void _goToGroupInfo(GroupResponse group) async {
+    // 1. 로그인이 안되어 있거나 가입하지 않은 그룹인 경우 접근 제한
     if (!group.isJoined) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -94,12 +93,16 @@ class _GroupScreenState extends State<GroupScreen> {
     }
 
     // 가입된 경우 상세 페이지로 이동하며 그룹 데이터 전달
-    Navigator.push(
+    final bool? hasLeft = await Navigator.push(
       context, 
       MaterialPageRoute(
         builder: (context)=> GroupInfoPage(group: group),
       ),
     );
+
+    if (hasLeft == true) {
+      _fetchGroupData();
+    }
   }
 
   // 모임 가입 함수

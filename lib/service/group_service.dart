@@ -172,4 +172,31 @@ class GroupService {
       return false;
     }
   }
+
+  // [6] 독서 모임 탈퇴
+  Future<bool> leaveGroup(int groupId) async {
+    final url = Uri.parse('$baseUrl/api/v1/groups/$groupId/leave');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print("모임 탈퇴 성공");
+        return true;
+      } else {
+        print("모임 탈퇴 실패: ${response.statusCode} - ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("모임 탈퇴 오류: $e");
+      return false;
+    }
+  }
 }
