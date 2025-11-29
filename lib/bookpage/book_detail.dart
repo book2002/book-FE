@@ -874,7 +874,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Container(
-                      height: 300,
+                      height: 240,
                       padding: const EdgeInsets.only(left: 10),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -883,7 +883,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
                               widget.thumbnail,
-                              height: 250, fit: BoxFit.cover,
+                              height: 180, fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => Container(height: 250, width: 170, color: Colors.grey[300], child: const Icon(Icons.broken_image, size: 50, color: Colors.grey)),
                             ),
                           ),
