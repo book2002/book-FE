@@ -10,11 +10,39 @@ import 'package:http_parser/http_parser.dart';
 class GroupService {
   final AuthService _authService = AuthService();
 
+  // [디버깅용 함수] 토큰에서 User ID(sub) 추출 및 정보 출력
+  void _debugPrintTokenInfo(String tag, String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print("🔴 [$tag] 올바르지 않은 JWT 형식입니다.");
+        return;
+      }
+
+      final payload = parts[1];
+      String normalized = base64Url.normalize(payload);
+      String decodedString = utf8.decode(base64Url.decode(normalized));
+      Map<String, dynamic> json = jsonDecode(decodedString);
+
+      print("========= 🕵️‍♀️ [$tag] 토큰 사용자 확인 🕵️‍♀️ =========");
+      print("Token 끝자리: ...${token.substring(token.length - 6)}");
+      print("User ID (sub): ${json['sub']}"); // ★ 여기가 1번 계정 ID인지 2번 계정 ID인지 확인 필수
+      print("만료 시간 (exp): ${json['exp']}");
+      print("================================================");
+      
+    } catch (e) {
+      print("🔴 [$tag] 토큰 분석 실패: $e");
+    }
+  }
+
   // [1] 독서 모임 목록 조회 (최신순) - GET /api/v1/groups
   Future<List<GroupResponse>> getGroups() async {
     final url = Uri.parse('$baseUrl/api/v1/groups');
     try {
       final token = await _authService.getAccessToken();
+      // [디버깅] 목록 조회 시 사용된 토큰 확인
+      if (token != null) _debugPrintTokenInfo("getGroups", token);
+
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -124,7 +152,10 @@ class GroupService {
     final url = Uri.parse('$baseUrl/api/v1/groups/$groupId/join');
     try {
       final token = await _authService.getAccessToken();
+      print("🔴 [joinGroup] 토큰이 없습니다. 로그인이 필요합니다.");
       if (token == null) return false;
+
+      _debugPrintTokenInfo("joinGroup 요청", token);
 
       final response = await http.post(
         url,
@@ -132,6 +163,8 @@ class GroupService {
           'Authorization': 'Bearer $token',
         },
       );
+
+      print(response.body);
 
       return (response.statusCode == 200 || response.statusCode == 201);
     } catch (e) {

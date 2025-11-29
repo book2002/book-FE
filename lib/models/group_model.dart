@@ -33,7 +33,7 @@ class GroupResponse {
       maxMembers: json['maxMembers'] ?? 0,
       currentMembers: json['currentMembers'] ?? 0,
       groupImageUrl: json['groupImageUrl'],
-      isJoined: json['isJoined'] ?? false,
+      isJoined: json['joined'] ?? false,
     );
   }
 }
