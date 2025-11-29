@@ -59,17 +59,6 @@ class _GroupScreenState extends State<GroupScreen> {
     }
   }
 
-  void _onSearch() {
-    final query = _searchController.text.trim();
-    if (query.isEmpty) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('검색어: $query')),
-    );
-
-    // TODO: 실제 도서 검색 로직 추가
-  }
-
   // 모임 생성 페이지 이동 함수
   void _goToCreateGroupPage() async {
     if (!_authService.isLoggedIn) {
@@ -87,6 +76,30 @@ class _GroupScreenState extends State<GroupScreen> {
     if (result == true) {
       _fetchGroupData();
     }
+  }
+
+  // 모임 상세 페이지 이동 함수 (가입 여부 확인)
+  void _goToGroupInfo(GroupResponse group) {
+    // 1. 로그인이 안되어 있거나
+    // 2. 가입하지 않은 그룹인 경우 접근 제한
+    if (!group.isJoined) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("모임에 가입해야 게시글을 확인할 수 있습니다."),
+          duration: Duration(seconds: 1),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // 가입된 경우 상세 페이지로 이동하며 그룹 데이터 전달
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context)=> GroupInfoPage(group: group),
+      ),
+    );
   }
 
   // 모임 가입 함수
@@ -188,10 +201,7 @@ class _GroupScreenState extends State<GroupScreen> {
                           color: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: InkWell(
-                            onTap: () {
-                              // 상세 페이지 이동 (구현 필요)
-                              Navigator.push(context, MaterialPageRoute(builder: (context)=> const GroupInfoPage()));
-                            },
+                            onTap: () => _goToGroupInfo(group),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -261,7 +271,6 @@ class _GroupScreenState extends State<GroupScreen> {
                         child: Text('최신순'),
                       ),
                     ],
-                    // 버튼 모양: 텍스트 + 아래 꺽쇠
                     child: Row(
                       children: [
                         Text(
@@ -288,64 +297,67 @@ class _GroupScreenState extends State<GroupScreen> {
                     itemCount: displayList.length,
                     itemBuilder: (context, index) {
                       final group = displayList[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        elevation: 0,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            children: [
-                              // 모임 이미지
-                              Container(
-                                width: 60, height: 60,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: Colors.grey[200],
-                                ),
-                                child: group.groupImageUrl != null
-                                  ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(group.groupImageUrl!, fit: BoxFit.cover))
-                                  : const Icon(Icons.group, color: Colors.grey),
-                              ),
-                              const SizedBox(width: 12),
-                              // 정보
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                    const SizedBox(height: 4),
-                                    Text(group.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.person, size: 14, color: Colors.grey),
-                                        const SizedBox(width: 4),
-                                        Text("${group.currentMembers}/${group.maxMembers}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              ),
-                              // 가입 버튼
-                              if (!group.isJoined)
-                                ElevatedButton(
-                                  onPressed: group.currentMembers >= group.maxMembers ? null : () => _joinGroup(group.groupId),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    minimumSize: Size.zero, 
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                      return InkWell(
+                        onTap: () => _goToGroupInfo(group),
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              children: [
+                                // 모임 이미지
+                                Container(
+                                  width: 60, height: 60,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.grey[200],
                                   ),
-                                  child: Text(
-                                    group.currentMembers >= group.maxMembers ? "마감" : "가입", 
-                                    style: const TextStyle(color: Colors.white, fontSize: 12)
+                                  child: group.groupImageUrl != null
+                                    ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(group.groupImageUrl!, fit: BoxFit.cover))
+                                    : const Icon(Icons.group, color: Colors.grey),
+                                ),
+                                const SizedBox(width: 12),
+                                // 정보
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      const SizedBox(height: 4),
+                                      Text(group.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.person, size: 14, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text("${group.currentMembers}/${group.maxMembers}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                        ],
+                                      )
+                                    ],
                                   ),
-                                )
-                              else
-                                const Text("참여중", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
-                            ],
+                                ),
+                                // 가입 버튼
+                                if (!group.isJoined)
+                                  ElevatedButton(
+                                    onPressed: group.currentMembers >= group.maxMembers ? null : () => _joinGroup(group.groupId),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero, 
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                                    ),
+                                    child: Text(
+                                      group.currentMembers >= group.maxMembers ? "마감" : "가입", 
+                                      style: const TextStyle(color: Colors.white, fontSize: 12)
+                                    ),
+                                  )
+                                else
+                                  const Text("참여중", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ],
+                            ),
                           ),
                         ),
                       );
