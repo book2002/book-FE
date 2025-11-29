@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/group_model.dart';
+import 'package:flutter_app/screens/details/group_post_detail_page.dart';
 
 // [신규 추가] 게시글 데이터 모델 클래스
 class PostModel {
@@ -18,8 +20,11 @@ class PostModel {
 }
 
 class GroupInfoPage extends StatefulWidget {
+  final GroupResponse group;
+
   const GroupInfoPage({
     Key? key,
+    required this.group,
   }) : super(key: key);
 
   @override
@@ -28,7 +33,7 @@ class GroupInfoPage extends StatefulWidget {
 
 
 class _GroupInfoPageState extends State<GroupInfoPage> {
-  // [신규 추가] 더미 데이터 리스트 생성
+  // 더미 데이터 리스트
   final List<PostModel> _dummyPosts = [
     PostModel(
       authorName: "책벌레",
@@ -70,12 +75,25 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // [유지] 배경색 흰색 고정
+      // 배경색 흰색 고정
       backgroundColor: Colors.white,
+
+      // 글 작성 플로팅 버튼 추가
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // 추후 글 작성 페이지 연결 예정
+          print("글 작성 버튼 클릭");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("글 작성 기능은 준비 중입니다.")),
+          );
+        },
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
       
-      // [유지] 앱바 디자인 및 우측 멤버 아이콘/인원수
+      // 앱바 디자인 및 우측 멤버 아이콘/인원수
       appBar: AppBar(
-        title: const Text("책책책", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.group.name, style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -83,11 +101,11 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Row(
-              children: const [
-                Icon(Icons.people, color: Colors.grey),
-                SizedBox(width: 4),
+              children: [
+                const Icon(Icons.people, color: Colors.grey),
+                const SizedBox(width: 4),
                 Text(
-                  "23명",
+                  "${widget.group.currentMembers}명",
                   style: TextStyle(
                       color: Colors.black, fontWeight: FontWeight.bold),
                 ),
@@ -111,8 +129,8 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "모임 소개",
                     style: TextStyle(
                       fontSize: 14,
@@ -120,10 +138,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                       color: Colors.grey,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    "바쁜 일상 속, 잠시 멈춰 책과 함께 쉬어가세요. 따뜻한 문장을 나누며 마음에 쉼표를 찍는 공간입니다.",
-                    style: TextStyle(
+                    widget.group.description.isNotEmpty
+                    ? widget.group.description
+                    : "모임 소개글이 없습니다.",
+                    style: const TextStyle(
                       fontSize: 16,
                       height: 1.5,
                     ),
@@ -175,7 +195,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     );
   }
 
-  // [유지] 태그 칩 위젯
+  // 태그 칩 위젯
   Widget _buildTagChip(String label, {required bool isSelected}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -195,56 +215,67 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     );
   }
 
-  // [수정] 게시글 아이템 위젯 - PostModel 데이터를 받아 출력하도록 변경
+  // 게시글 아이템 빌더
   Widget _buildPostItem(PostModel post) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.grey[200],
-                radius: 12,
-                child: const Icon(Icons.person, size: 16, color: Colors.grey),
-              ),
-              const SizedBox(width: 8),
-              // [수정] 작성자 이름 데이터 바인딩
-              Text(post.authorName,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(width: 8),
-              // [신규] 카테고리 표시 (선택 사항)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GroupPostDetailPage(post: post),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.grey[200],
+                  radius: 12,
+                  child: const Icon(Icons.person, size: 16, color: Colors.grey),
                 ),
-                child: Text(post.category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-              ),
-              const Spacer(),
-              // [수정] 시간 데이터 바인딩
-              Text(post.timeAgo,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // [수정] 제목 데이터 바인딩
-          Text(
-            post.title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          // [수정] 내용 데이터 바인딩
-          Text(
-            post.content,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-        ],
-      ),
+                const SizedBox(width: 8),
+                // [수정] 작성자 이름 데이터 바인딩
+                Text(post.authorName,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(width: 8),
+                // [신규] 카테고리 표시 (선택 사항)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(post.category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ),
+                const Spacer(),
+                // [수정] 시간 데이터 바인딩
+                Text(post.timeAgo,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // 제목 데이터 바인딩
+            Text(
+              post.title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            // 내용 데이터 바인딩
+            Text(
+              post.content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+          ],
+        ),
+      )
     );
+    
   }
 }

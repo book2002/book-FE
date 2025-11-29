@@ -42,6 +42,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 홈 화면에 필요한 데이터(내 책장, 추천, 신간)를 병렬로 가져오는 함수
   Future<void> _fetchHomeData() async {
+    // [변경 사항] RefreshIndicator 사용 시 로딩 표시가 이중으로 뜨지 않도록 조건부 로딩 설정 가능하나,
+    // 여기서는 간단히 로딩 상태를 다시 true로 설정하여 갱신 중임을 명시하거나, 
+    // onRefresh에서 호출될 때는 setState를 최소화할 수 있습니다.
+    // 여기서는 기본 로직 유지.
     setState(() { _isLoading = true; });
     try {
       // Future.wait를 사용하여 모든 API 요청 동시에 시작
@@ -105,202 +109,206 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),  //margin 설정
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          //도서 검색창
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: '도서명을 입력하세요',
-              //prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: _fetchHomeData,
+      color: Colors.green,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),  //margin 설정
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            //도서 검색창
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '도서명을 입력하세요',
+                //prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+              onSubmitted: (_) => _onSearch(),
             ),
-            onSubmitted: (_) => _onSearch(),
-          ),
-          const SizedBox(height: 16,),
+            const SizedBox(height: 16,),
 
-          // [변경 사항] 검색 결과가 있을 경우 검색 결과 목록 표시
-          if (_searchResults.isNotEmpty) ...[
-             Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("검색 결과",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _searchController.clear();
-                        _searchResults.clear();
-                      });
-                    },
-                    child: const Text("닫기")
+            // [변경 사항] 검색 결과가 있을 경우 검색 결과 목록 표시
+            if (_searchResults.isNotEmpty) ...[
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("검색 결과",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _searchResults.clear();
+                        });
+                      },
+                      child: const Text("닫기")
+                    )
+                  ],
+                ),
+              BookListWidget(books: _searchResults, tabType: 'before'),
+            ] else ...[
+              // 검색 결과 없을 때 -> 기존 화면
+              Padding(
+                padding: EdgeInsetsGeometry.only(left: 10),
+                child: Text(
+                  '현재 읽고 있는 책이에요.',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                   )
-                ],
+                ),
               ),
-            BookListWidget(books: _searchResults, tabType: 'before'),
-          ] else ...[
-            // 검색 결과 없을 때 -> 기존 화면
-            Padding(
-              padding: EdgeInsetsGeometry.only(left: 10),
-              child: Text(
-                '현재 읽고 있는 책이에요.',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                )
-              ),
-            ),
-            const SizedBox(height: 8,),
-            //카드뷰
-            SizedBox(
-              height: 100,
-              child: _isLoading
-              ? const Center(child: CircularProgressIndicator(),)
-              : _myReadingBooks.isEmpty
-                ? const Center(child: Text("읽고 있는 책이 없어요. 책을 추가해보세요!"),)
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal, //가로 스크롤
-                    itemCount: dummyBooks.length,
-                    shrinkWrap: true,         //내부 높이 내용에 맞게 계산
-                    physics: const AlwaysScrollableScrollPhysics(), //스크롤 허용
-                    itemBuilder: (context, index) {
-                      final book = _myReadingBooks[index];
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      final cardWidth = screenWidth/2-30;   //화면 절반, 여백 보정
-                      
-                      return Container(
-                        width: cardWidth,
-                        margin: const EdgeInsets.only(right: 12),
-                        child: Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
-                        //margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: InkWell(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              //왼편: 이미지
-                              ClipRRect(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  bottomLeft: Radius.circular(12),
-                                ),
-                                child: Image.network(
-                                  book.thumbnail ?? "https://via.placeholder.com/100",
-                                  width: cardWidth*0.3, //카드 너비 약 40% 사용
-                                  height: 120,
-                                  fit: BoxFit.cover,    //이미지를 영역에 가득 채움
-                                  errorBuilder: (ctx, err, stack) => Container(
-                                    width: cardWidth*0.3, color: Colors.grey[300], child: const Icon(Icons.book),
-                                  ),
-                                ),
-                              ),
-                              //오른편: 책 정보
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        book.title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        book.author,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12
-                                        ),
-                                      ),
-                                      Text(
-                                        "진행률 : ${book.progressPercent}",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              )
-                              
-                            ],
-                          ),
-                          onTap: () {
-                            // TODO: 책 상세 페이지로 이동
-                            Navigator.push(
-                              context, 
-                              MaterialPageRoute(
-                                builder: (context) => BookDetailPage(
-                                  isbn: book.isbn,
-                                  title: book.title, 
-                                  author: book.author, 
-                                  thumbnail: book.thumbnail ?? "",
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ) 
+              const SizedBox(height: 8,),
+              //카드뷰
+              SizedBox(
+                height: 100,
+                child: _isLoading
+                ? const Center(child: CircularProgressIndicator(),)
+                : _myReadingBooks.isEmpty
+                  ? const Center(child: Text("읽고 있는 책이 없어요. 책을 추가해보세요!"),)
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal, //가로 스크롤
+                      itemCount: dummyBooks.length,
+                      shrinkWrap: true,         //내부 높이 내용에 맞게 계산
+                      physics: const AlwaysScrollableScrollPhysics(), //스크롤 허용
+                      itemBuilder: (context, index) {
+                        final book = _myReadingBooks[index];
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final cardWidth = screenWidth/2-30;   //화면 절반, 여백 보정
                         
-                      );
-                    },
-                  ),
-            ),
-            
-            const SizedBox(height: 18,),
-
-            // --- 신간 도서 ---
-            Padding(
-              padding: EdgeInsetsGeometry.only(left: 10),
-              child: Text("🆕 따끈따끈 신간",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                )
+                        return Container(
+                          width: cardWidth,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: Card(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 3,
+                          //margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: InkWell(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                //왼편: 이미지
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                    bottomLeft: Radius.circular(12),
+                                  ),
+                                  child: Image.network(
+                                    book.thumbnail ?? "https://via.placeholder.com/100",
+                                    width: cardWidth*0.3, //카드 너비 약 40% 사용
+                                    height: 120,
+                                    fit: BoxFit.cover,    //이미지를 영역에 가득 채움
+                                    errorBuilder: (ctx, err, stack) => Container(
+                                      width: cardWidth*0.3, color: Colors.grey[300], child: const Icon(Icons.book),
+                                    ),
+                                  ),
+                                ),
+                                //오른편: 책 정보
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          book.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          book.author,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12
+                                          ),
+                                        ),
+                                        Text(
+                                          "진행률 : ${book.progressPercent}",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                )
+                                
+                              ],
+                            ),
+                            onTap: () {
+                              // TODO: 책 상세 페이지로 이동
+                              Navigator.push(
+                                context, 
+                                MaterialPageRoute(
+                                  builder: (context) => BookDetailPage(
+                                    isbn: book.isbn,
+                                    title: book.title, 
+                                    author: book.author, 
+                                    thumbnail: book.thumbnail ?? "",
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ) 
+                          
+                        );
+                      },
+                    ),
               ),
-            ),
-            _isLoading
-              ? const SizedBox.shrink()
-              : BookListWidget(books: _newReleaseBooks, tabType: 'before'),
+              
+              const SizedBox(height: 18,),
 
-            const SizedBox(height: 20,),
-            
-            // --- 베스트셀러 ---
-            // Padding(
-            //   padding: const EdgeInsets.only(left: 10),
-            //   child: Text("🔥 이번 주 베스트셀러",
-            //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            //             fontWeight: FontWeight.bold,
-            //     )
-            //   ),
-            // ),
-            // _isLoading
-            //   ? const Center(child: CircularProgressIndicator())
-            //   : BookListWidget(books: _bestSellerBooks, tabType: 'before'),
+              // --- 신간 도서 ---
+              Padding(
+                padding: EdgeInsetsGeometry.only(left: 10),
+                child: Text("🆕 따끈따끈 신간",
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                  )
+                ),
+              ),
+              _isLoading
+                ? const SizedBox.shrink()
+                : BookListWidget(books: _newReleaseBooks, tabType: 'before'),
 
-          ]
+              const SizedBox(height: 20,),
+              
+              // --- 베스트셀러 ---
+              // Padding(
+              //   padding: const EdgeInsets.only(left: 10),
+              //   child: Text("🔥 이번 주 베스트셀러",
+              //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              //             fontWeight: FontWeight.bold,
+              //     )
+              //   ),
+              // ),
+              // _isLoading
+              //   ? const Center(child: CircularProgressIndicator())
+              //   : BookListWidget(books: _bestSellerBooks, tabType: 'before'),
 
-        ],
-      ),
+            ]
+
+          ],
+        ),
+      ), 
     );
+    
 
   }
 }

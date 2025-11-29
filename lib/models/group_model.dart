@@ -33,9 +33,31 @@ class GroupResponse {
       maxMembers: json['maxMembers'] ?? 0,
       currentMembers: json['currentMembers'] ?? 0,
       groupImageUrl: json['groupImageUrl'],
-      isJoined: json['isJoined'] ?? false,
+      isJoined: json['joined'] ?? false,
     );
   }
+}
+
+// 모임 생성 요청 DTO
+class GroupCreateRequest {
+  final String name;
+  final String description;
+  final String goal;
+  final int maxMembers;
+
+  GroupCreateRequest({
+    required this.name,
+    required this.description,
+    required this.goal,
+    required this.maxMembers,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'goal': goal,
+    'maxMembers': maxMembers,
+  };
 }
 
 class GroupPostResponse {

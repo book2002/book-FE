@@ -50,7 +50,7 @@ class ReviewSaveRequest {
     'itemId': itemId,
     'content': content,
     'rating': rating,
-    'public': isPublic,
+    'isPublic': isPublic,
   };
 }
 
