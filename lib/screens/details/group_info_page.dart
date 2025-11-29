@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/group_model.dart';
 import 'package:flutter_app/screens/details/group_post_detail_page.dart';
+import 'package:flutter_app/service/group_service.dart';
 
 // [신규 추가] 게시글 데이터 모델 클래스
 class PostModel {
@@ -33,6 +34,9 @@ class GroupInfoPage extends StatefulWidget {
 
 
 class _GroupInfoPageState extends State<GroupInfoPage> {
+  // 그룹 서비스 인스턴스
+  final GroupService _groupService = GroupService();
+
   // 더미 데이터 리스트
   final List<PostModel> _dummyPosts = [
     PostModel(
@@ -71,6 +75,44 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       category: "일반",
     ),
   ];
+
+  // 탈퇴 로직
+  void _handleLeaveGroup() async {
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("모임 탈퇴"),
+        content: const Text("정말로 이 모임에서 나가시겠습니까?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("나가기", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      bool success = await _groupService.leaveGroup(widget.group.groupId);
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("모임에서 탈퇴했습니다.")),
+        );
+        // true를 반환하여 이전 화면(목록)에서 갱신하도록 함
+        Navigator.pop(context, true);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("탈퇴에 실패했습니다. 다시 시도해주세요.")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +153,13 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 ),
               ],
             ),
-          )
+          ),
+          IconButton(
+            icon: const Icon(Icons.exit_to_app, color: Colors.grey), // 나가는 문 아이콘
+            tooltip: "모임 나가기",
+            onPressed: _handleLeaveGroup,
+          ),
+          const SizedBox(width: 16,)
         ],
       ),
       body: Column(
