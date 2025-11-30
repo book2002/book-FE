@@ -59,38 +59,3 @@ class GroupCreateRequest {
     'maxMembers': maxMembers,
   };
 }
-
-class DiscussionResponse {
-  final int discussionId;
-  final int groupId;
-  final String authorNickname;
-  final String topicTitle;
-  final String topicContent;
-  final bool isClosed;
-  final String createdAt;
-  final int commentCount;
-
-  DiscussionResponse({
-    required this.discussionId,
-    required this.groupId,
-    required this.authorNickname,
-    required this.topicTitle,
-    required this.topicContent,
-    required this.isClosed,
-    required this.createdAt,
-    required this.commentCount,
-  });
-
-  factory DiscussionResponse.fromJson(Map<String, dynamic> json) {
-    return DiscussionResponse(
-      discussionId: json['discussionId'] ?? 0,
-      groupId: json['groupId'] ?? 0,
-      authorNickname: json['authorNickname'] ?? '',
-      topicTitle: json['topicTitle'] ?? '',
-      topicContent: json['topicContent'] ?? '',
-      isClosed: json['isClosed'] ?? false,
-      createdAt: json['createdAt'] ?? '',
-      commentCount: json['commentCount'] ?? 0,
-    );
-  }
-}

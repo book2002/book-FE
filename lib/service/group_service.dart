@@ -27,7 +27,7 @@ class GroupService {
       print("========= 🕵️‍♀️ [$tag] 토큰 사용자 확인 🕵️‍♀️ =========");
       print("Token 끝자리: ...${token.substring(token.length - 6)}");
       print("User ID (sub): ${json['sub']}"); // ★ 여기가 1번 계정 ID인지 2번 계정 ID인지 확인 필수
-      print("만료 시간 (exp): ${json['exp']}");
+      print("profile ID (profileId): ${json['profileId']}"); // ★ 여기가 1번 계정 ID인지 2번 계정 ID인지 확인 필수
       print("================================================");
       
     } catch (e) {

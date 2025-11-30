@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/service/discussion_service.dart';
 import 'package:flutter_app/service/group_post_service.dart';
 
 class GroupPostCreatePage extends StatefulWidget {
@@ -12,9 +13,19 @@ class GroupPostCreatePage extends StatefulWidget {
 
 class _GroupPostCreatePageState extends State<GroupPostCreatePage> {
   final GroupPostService _postService = GroupPostService();
+  final DiscussionService _discussionService = DiscussionService();
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   bool _isSubmitting = false;
+  String _selectedCategory = '일반';    // '일반' or '토론'
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
 
   void _submitPost() async {
     final title = _titleController.text.trim();
@@ -31,12 +42,14 @@ class _GroupPostCreatePageState extends State<GroupPostCreatePage> {
       _isSubmitting = true;
     });
 
-    // 게시글 작성 요청
-    bool success = await _postService.createPost(
-      widget.groupId,
-      title,
-      content,
-    );
+    bool success = false;
+
+    // 카테고리에 따라 다른 API 호출
+    if (_selectedCategory == '일반') {
+      success = await _postService.createPost(widget.groupId, title, content);
+    } else {
+      success = await _discussionService.createDiscussion(widget.groupId, title, content);
+    }
 
     if (!mounted) return;
 
@@ -78,6 +91,16 @@ class _GroupPostCreatePageState extends State<GroupPostCreatePage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // 카테고리 선택 칩
+            Row(
+              children: [
+                _buildCategoryChip('일반'),
+                const SizedBox(width: 10),
+                _buildCategoryChip('토론'),
+              ],
+            ),
+            const SizedBox(height: 20),
+
             // 제목 입력
             TextField(
               controller: _titleController,
@@ -96,8 +119,10 @@ class _GroupPostCreatePageState extends State<GroupPostCreatePage> {
                 controller: _contentController,
                 maxLines: null, // 무제한 줄
                 expands: true,
-                decoration: const InputDecoration(
-                  hintText: "내용을 자유롭게 작성해주세요.\n(모임과 관련 없는 내용은 삭제될 수 있습니다.)",
+                decoration: InputDecoration(
+                  hintText: _selectedCategory == '토론' 
+                      ? "토론 주제에 대해 자유롭게 이야기해보세요."
+                      : "내용을 자유롭게 작성해주세요.\n(모임과 관련 없는 내용은 삭제될 수 있습니다.)",
                   border: InputBorder.none,
                   focusedBorder: InputBorder.none,
                 ),
@@ -107,6 +132,29 @@ class _GroupPostCreatePageState extends State<GroupPostCreatePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label) {
+    bool isSelected = _selectedCategory == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _selectedCategory = label;
+          });
+        }
+      },
+      selectedColor: Colors.green,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+        fontWeight: FontWeight.bold,
+      ),
+      backgroundColor: Colors.grey[200],
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 }

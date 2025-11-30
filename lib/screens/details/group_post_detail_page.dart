@@ -36,12 +36,6 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
 
   final TextEditingController _commentController = TextEditingController();
   
-  // 더미 댓글 데이터
-  final List<Map<String, String>> _dummyComments = [
-    {'author': '독서왕', 'content': '네 감사합니다!', 'time': '5분 전'},
-    {'author': '책벌레', 'content': '확인했습니다.', 'time': '1시간 전'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -285,7 +279,7 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
     // 데이터가 있는 경우 (로딩 완료 or 미리보기)
     final post = _post!;
     // 1. 작성자 여부: 내 닉네임과 게시글 작성자 닉네임 일치 여부 (닉네임이 로드되지 않았으면 false)
-    bool isAuthor = _myNickname != null && post.authorNickname == _myNickname;
+    // bool isAuthor = _myNickname != null && post.authorNickname == _myNickname;
     // 2. 관리 권한: 작성자이거나 모임장인 경우
     // bool canManage = isAuthor || widget.isLeader;
     bool canManage = true;
@@ -407,7 +401,7 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                     const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
                     const SizedBox(height: 10),
 
-                    // 4. 댓글 리스트 (더미)
+                    // 4. 댓글 리스트
                     Row(
                       children: [
                         const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey),
