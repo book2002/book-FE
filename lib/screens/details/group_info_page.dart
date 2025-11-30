@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/group_model.dart';
+import 'package:flutter_app/models/group_post_model.dart';
 import 'package:flutter_app/screens/details/group_post_detail_page.dart';
+import 'package:flutter_app/screens/details/post_create_page.dart';
+import 'package:flutter_app/service/group_post_service.dart';
 import 'package:flutter_app/service/group_service.dart';
 
 // [신규 추가] 게시글 데이터 모델 클래스
@@ -36,6 +39,16 @@ class GroupInfoPage extends StatefulWidget {
 class _GroupInfoPageState extends State<GroupInfoPage> {
   // 그룹 서비스 인스턴스
   final GroupService _groupService = GroupService();
+  final GroupPostService _postService = GroupPostService();
+
+  // [데이터 상태]
+  List<GroupPostResponse> _allPosts = [];
+  List<GroupPostResponse> _filteredPosts = [];
+  bool _isLoadingPosts = true;
+
+  // [필터 상태] 기본값: 모두 선택
+  bool _showDiscussion = true;
+  bool _showGeneral = true;
 
   // 더미 데이터 리스트
   final List<PostModel> _dummyPosts = [
@@ -75,6 +88,54 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       category: "일반",
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  // 게시글 목록 조회
+  Future<void> _fetchPosts() async {
+    setState(() { _isLoadingPosts = true; });
+    
+    // 페이지네이션은 현재 넉넉하게 50개로 설정
+    List<GroupPostResponse> posts = await _postService.getGroupPosts(widget.group.groupId, size: 50);
+
+    if (mounted) {
+      setState(() {
+        _allPosts = posts;
+        _isLoadingPosts = false;
+        _applyFilter(); // 데이터 로드 후 필터 적용
+      });
+    }
+  }
+
+  // 필터링 로직
+  void _applyFilter() {
+    setState(() {
+      _filteredPosts = _allPosts.where((post) {
+        if (post.category == '토론' && !_showDiscussion) return false;
+        if (post.category == '일반' && !_showGeneral) return false;
+        return true;
+      }).toList();
+    });
+  }
+
+  // 글 작성 페이지 이동
+  void _goToCreatePost() async {
+    final bool? created = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GroupPostCreatePage(groupId: widget.group.groupId),
+      ),
+    );
+
+    // 작성이 완료되어 true가 반환되면 목록 갱신
+    if (created == true) {
+      _fetchPosts();
+    }
+  }
 
   // 탈퇴 로직
   void _handleLeaveGroup() async {
@@ -120,15 +181,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       // 배경색 흰색 고정
       backgroundColor: Colors.white,
 
-      // 글 작성 플로팅 버튼 추가
+      // 글 작성 플로팅 버튼
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 추후 글 작성 페이지 연결 예정
-          print("글 작성 버튼 클릭");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("글 작성 기능은 준비 중입니다.")),
-          );
-        },
+        onPressed: _goToCreatePost,
         backgroundColor: Colors.green,
         child: const Icon(Icons.edit, color: Colors.white),
       ),
@@ -209,9 +264,19 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               children: [
                 Row(
                   children: [
-                    _buildTagChip("토론", isSelected: true),
+                    _buildTagChip("토론", isSelected: _showDiscussion, onTap: () {
+                      setState(() {
+                        _showDiscussion = !_showDiscussion;
+                        _applyFilter();
+                      });
+                    },),
                     const SizedBox(width: 8),
-                    _buildTagChip("일반", isSelected: true),
+                    _buildTagChip("일반", isSelected: _showGeneral, onTap: () {
+                      setState(() {
+                        _showGeneral = !_showGeneral;
+                        _applyFilter();
+                      });
+                    },),
                   ],
                 ),
                 Row(
@@ -226,17 +291,34 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
           const Divider(height: 1, thickness: 1),
 
-          // 3. [수정] 하단 게시글 리스트 (더미 데이터 연결)
+          // 하단 게시글 리스트
           Expanded(
-            child: ListView.separated(
-              itemCount: _dummyPosts.length, // 데이터 개수만큼 생성
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                // 해당 인덱스의 데이터 모델 가져오기
-                final post = _dummyPosts[index];
-                return _buildPostItem(post); // 모델 전달
-              },
-            ),
+            child: _isLoadingPosts
+              ? const Center(child: CircularProgressIndicator(),)
+              : _filteredPosts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.article_outlined, size: 60, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          "게시글이 존재하지 않아요.\n첫 게시글을 작성해보세요!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _filteredPosts.length, // 데이터 개수만큼 생성
+                    separatorBuilder: (context, index) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      // 해당 인덱스의 데이터 모델 가져오기
+                      final post = _filteredPosts[index];
+                      return _buildPostItem(post); // 모델 전달
+                    },
+                  ),
           ),
         ],
       ),
@@ -244,27 +326,30 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   // 태그 칩 위젯
-  Widget _buildTagChip(String label, {required bool isSelected}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.green : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+  Widget _buildTagChip(String label, {required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.green : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
   }
 
   // 게시글 아이템 빌더
-  Widget _buildPostItem(PostModel post) {
+  Widget _buildPostItem(GroupPostResponse post) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -288,7 +373,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 ),
                 const SizedBox(width: 8),
                 // [수정] 작성자 이름 데이터 바인딩
-                Text(post.authorName,
+                Text(post.authorNickname,
                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(width: 8),
                 // [신규] 카테고리 표시 (선택 사항)
@@ -320,6 +405,16 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
+            if (post.commentCount > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.comment, size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text("${post.commentCount}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              )
+            ]
           ],
         ),
       )

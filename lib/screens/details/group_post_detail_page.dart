@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/group_post_model.dart';
 import 'package:flutter_app/screens/details/group_info_page.dart'; // PostModel 사용을 위해 임포트
 
 class GroupPostDetailPage extends StatefulWidget {
-  final PostModel post;
+  final GroupPostResponse post;
 
   const GroupPostDetailPage({Key? key, required this.post}) : super(key: key);
 
@@ -63,7 +64,7 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(widget.post.authorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(widget.post.authorNickname, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           const SizedBox(height: 2),
                           Text(widget.post.timeAgo, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                         ],

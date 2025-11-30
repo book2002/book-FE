@@ -60,38 +60,6 @@ class GroupCreateRequest {
   };
 }
 
-class GroupPostResponse {
-  final int postId;
-  final int groupId;
-  final String authorNickname;
-  final String title;
-  final String content;
-  final String createdAt;
-  final int commentCount;
-
-  GroupPostResponse({
-    required this.postId,
-    required this.groupId,
-    required this.authorNickname,
-    required this.title,
-    required this.content,
-    required this.createdAt,
-    required this.commentCount,
-  });
-
-  factory GroupPostResponse.fromJson(Map<String, dynamic> json) {
-    return GroupPostResponse(
-      postId: json['postId'] ?? 0,
-      groupId: json['groupId'] ?? 0,
-      authorNickname: json['authorNickname'] ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      createdAt: json['createdAt'] ?? '',
-      commentCount: json['commentCount'] ?? 0,
-    );
-  }
-}
-
 class DiscussionResponse {
   final int discussionId;
   final int groupId;
