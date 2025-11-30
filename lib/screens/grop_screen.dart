@@ -4,7 +4,6 @@ import 'package:flutter_app/screens/details/group_create_page.dart';
 import 'package:flutter_app/screens/details/group_info_page.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_app/service/group_service.dart';
-import 'package:flutter_app/testdata/group_dummy.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({Key? key}) : super(key: key);
@@ -16,8 +15,6 @@ class GroupScreen extends StatefulWidget {
 class _GroupScreenState extends State<GroupScreen> {
   final GroupService _groupService = GroupService();
   final AuthService _authService = AuthService();
-
-  final TextEditingController _searchController = TextEditingController();
 
   // 데이터 상태 변수
   List<GroupResponse> _myGroups = [];
