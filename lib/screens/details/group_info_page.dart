@@ -478,24 +478,6 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     );
   }
 
-  Widget _buildHeader(String author, String category, String timeAgo) {
-    return Row(
-      children: [
-        CircleAvatar(backgroundColor: Colors.grey[200], radius: 12, child: const Icon(Icons.person, size: 16, color: Colors.grey)),
-        const SizedBox(width: 8),
-        Text(author, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4)),
-          child: Text(category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-        ),
-        const Spacer(),
-        Text(timeAgo, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
-  }
-
   Widget _buildCommentCount(int count) {
     return Row(
       children: [
