@@ -22,8 +22,55 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Readly',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 243, 245, 241)),
+        useMaterial3: true,   // Material 3 사용 설정
+        scaffoldBackgroundColor: Colors.white,    // 기본 배경색 설정
+
+        // 앱바 테마
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black, // 뒤로가기 버튼, 제목 색상
+          elevation: 0,
+          scrolledUnderElevation: 0, // 스크롤 시 색상 변경 방지
+        ),
+
+        // 다이얼로그(모달/알림창) 테마
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent, // M3 틴트 색상 제거 (순수 흰색 유지)
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+
+        // 바텀 시트 테마
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+        ),
+
+        // 카드 테마 (Card 위젯)
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0, 
+        ),
+
+        // 팝업 메뉴(드롭다운 등) 테마
+        popupMenuTheme: const PopupMenuThemeData(
+          color: Colors.white,
+          surfaceTintColor: Colors.transparent,
+        ),
+
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green, // 앱의 메인 색상
+          background: Colors.white,
+          surface: Colors.white, // 컴포넌트 표면 색상 강제 지정
+        ),
       ),
+      
       debugShowCheckedModeBanner: false,
 
       // 한국어 로컬라이제이션 설정 추가
