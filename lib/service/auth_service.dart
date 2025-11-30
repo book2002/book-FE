@@ -94,19 +94,30 @@ class AuthService {
       if (token == null) return null;
 
       final parts = token.split('.');
-      if (parts.length != 3) return null;
+      if (parts.length != 3) {
+        print("🔴 올바르지 않은 JWT 형식입니다.");
+        return null;
+      }
 
-      // Payload 부분 (두 번째 부분) 디코딩
-      final payload = _decodeBase64(parts[1]);
-      final payloadMap = json.decode(payload);
+      final payload = parts[1];
+      String normalized = base64Url.normalize(payload);
+      String decodedString = utf8.decode(base64Url.decode(normalized));
+      Map<String, dynamic> json = jsonDecode(decodedString);
 
-      print("토큰 Payload 데이터: $payloadMap"); // 디버깅용: 콘솔에서 키 이름을 확인
+      print("========= 🕵️‍♀️ 토큰 사용자 확인 🕵️‍♀️ =========");
+      print("Token 끝자리: ...${token.substring(token.length - 6)}");
+      print("User ID (sub): ${json['sub']}"); // ★ 여기가 1번 계정 ID인지 2번 계정 ID인지 확인 필수
+      print("profile ID (sub): ${json['profileId']}"); // ★ 여기가 1번 계정 ID인지 2번 계정 ID인지 확인 필수
+      print("만료 시간 (exp): ${json['exp']}");
+      print("================================================");
 
-      if (payloadMap is Map<String, dynamic>) {
+      // print("토큰 Payload 데이터: $payloadMap"); // 디버깅용: 콘솔에서 키 이름을 확인
+
+      if (json['profileId'] != null) {
         // 1순위: profileId, 2순위: id, 3순위: sub
-        return payloadMap['profileId']?.toString() ?? 
-               payloadMap['id']?.toString() ?? 
-               payloadMap['sub']?.toString();
+        return json['profileId']?.toString() ?? 
+               json['id']?.toString() ?? 
+               json['sub']?.toString();
       }
       return null;
     } catch (e) {

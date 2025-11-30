@@ -31,17 +31,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       // accessToken으로 연결된 회원 정보 파악
       final accessToken = await _authService.getAccessToken();
-      final profileId = await _authService.getProfileId();
-      // final profileId = await _authService.getProfileIdFromToken();
+      final profileId = await _authService.getProfileIdFromToken();
 
-      // if (accessToken == null || profileId == null) {
-      //   print("토큰이 없거나 ID를 추출할 수 없습니다.");
-      //   setState(() {
-      //     _isLoading = false;
-      //     _hasError = true;
-      //   });
-      //   return;
-      // }
+      if (accessToken == null || profileId == null) {
+        print("토큰이 없거나 ID를 추출할 수 없습니다.");
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+        return;
+      }
 
       final url = Uri.parse('$baseUrl/api/v1/profile/$profileId');
       print("요청 URL: $url"); 
