@@ -25,6 +25,7 @@ class GroupPostResponse {
   final int commentCount;
 
   final String category;    // ui에서 필터링을 위해 사용
+  final bool isAuthor;      // 본인 작성 글 여부 확인용
 
   GroupPostResponse({
     required this.postId,
@@ -35,6 +36,7 @@ class GroupPostResponse {
     required this.createdAt,
     required this.commentCount,
     this.category = '일반', // 기본값 설정
+    this.isAuthor = false,  // 기본값 설정
   });
 
   factory GroupPostResponse.fromJson(Map<String, dynamic> json) {
@@ -48,6 +50,7 @@ class GroupPostResponse {
       commentCount: json['commentCount'] ?? 0,
 
       category: json['category'] ?? '일반', 
+      isAuthor: json['isAuthor'] ?? json['myPost'] ?? true,  // AuthService의 내 ID와 authorNickname/Id를 비교하는 로직 필요
     );
   }
 

@@ -49,46 +49,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   // [필터 상태] 기본값: 모두 선택
   bool _showDiscussion = true;
   bool _showGeneral = true;
-
-  // 더미 데이터 리스트
-  final List<PostModel> _dummyPosts = [
-    PostModel(
-      authorName: "책벌레",
-      timeAgo: "10분 전",
-      title: "이번 주 모임 장소 변경 공지입니다.",
-      content: "안녕하세요. 이번 주 모임 장소가 강남역 11번 출구 앞 스타벅스로 변경되었습니다. 착오 없으시길 바랍니다.",
-      category: "일반",
-    ),
-    PostModel(
-      authorName: "독서왕",
-      timeAgo: "1시간 전",
-      title: "3장 '마음의 소리' 발제문 공유합니다.",
-      content: "이번 챕터에서 주인공의 심리 변화가 가장 인상 깊었습니다. 특히 154페이지의 독백 부분에 대해 함께 이야기 나누고 싶어요.",
-      category: "토론",
-    ),
-    PostModel(
-      authorName: "김철수",
-      timeAgo: "3시간 전",
-      title: "다음 달 읽을 책 투표 결과",
-      content: "투표 결과 '지적 대화를 위한 넓고 얕은 지식'이 선정되었습니다. 다음 주까지 1부 읽어오시면 됩니다!",
-      category: "일반",
-    ),
-    PostModel(
-      authorName: "이영희",
-      timeAgo: "어제",
-      title: "혹시 이 문장 이해되시는 분?",
-      content: "p.89 '그는 침묵 속에서 비명을 질렀다'라는 표현이 역설적인데, 작가가 의도한 바가 무엇일까요?",
-      category: "토론",
-    ),
-    PostModel(
-      authorName: "신입회원",
-      timeAgo: "2일 전",
-      title: "가입 인사 드립니다! 잘 부탁드려요.",
-      content: "평소에 책 읽기를 좋아해서 가입하게 되었습니다. 주로 소설을 읽지만 다양한 장르에 도전해보고 싶습니다.",
-      category: "일반",
-    ),
-  ];
-
+  
   @override
   void initState() {
     super.initState();
@@ -178,7 +139,6 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 배경색 흰색 고정
       backgroundColor: Colors.white,
 
       // 글 작성 플로팅 버튼
@@ -220,7 +180,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. [유지] 상단 모임 소개 구역
+          // 1. 상단 모임 소개
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
             child: Container(
@@ -256,7 +216,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             ),
           ),
 
-          // 2. [유지] 필터 및 정렬 구역
+          // 2. 필터 및 정렬 구역
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
             child: Row(
@@ -351,13 +311,21 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   // 게시글 아이템 빌더
   Widget _buildPostItem(GroupPostResponse post) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final bool? needRefresh = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => GroupPostDetailPage(post: post),
+            builder: (context) => GroupPostDetailPage(
+              postId: post.postId,
+              previewPost: post,
+              // isLeader: ,
+            ),
           ),
         );
+
+        if (needRefresh == true) {
+          _fetchPosts();
+        }
       },
       child: Padding(
         padding: const EdgeInsets.all(20.0),
