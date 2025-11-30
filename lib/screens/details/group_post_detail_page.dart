@@ -29,8 +29,10 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
   String? _errorMessage;
 
   String? _myNickname;    // 작성자 닉네임 비교용
-
   bool _isContentChanged = false;   // 컨텐츠 변경 여부 추적 변수 
+
+  List<GroupCommentResponse> _comments = [];    // 댓글 데이터 상태 변수
+  bool _isLoadingComments = true;
 
   final TextEditingController _commentController = TextEditingController();
   
@@ -43,11 +45,11 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
   @override
   void initState() {
     super.initState();
-    
     if (widget.previewPost != null) {
       _post = widget.previewPost;
     }
     _fetchPostDetail();
+    _fetchComments();
     _fetchMyNickname();
   }
 
@@ -72,6 +74,108 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
         });
       }
     }
+  }
+
+  // 댓글 목록 조회
+  Future<void> _fetchComments() async {
+    setState(() { _isLoadingComments = true; });
+    try {
+      final comments = await _postService.getComments(widget.postId);
+      if (mounted) {
+        setState(() {
+          _comments = comments;
+          _isLoadingComments = false;
+        });
+      }
+    } catch (e) {
+      print("댓글 조회 실패: $e");
+      if (mounted) {
+        setState(() { _isLoadingComments = false; });
+      }
+    }
+  }
+
+  // 댓글 작성
+  void _submitComment() async {
+    final content = _commentController.text.trim();
+    if (content.isEmpty) return;
+
+    FocusScope.of(context).unfocus(); // 키보드 내리기
+
+    bool success = await _postService.createComment(widget.postId, content);
+    if (success) {
+      _commentController.clear();
+      // 댓글 작성 후 목록과 게시글 정보(댓글 수) 갱신
+      _fetchComments();
+      _fetchPostDetail();
+      setState(() { _isContentChanged = true; }); // 댓글 수 변경도 변경 사항으로 간주
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("댓글 작성 실패")));
+    }
+  }
+
+  // 댓글 삭제
+  void _deleteComment(int commentId) async {
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("댓글 삭제"),
+        content: const Text("정말로 삭제하시겠습니까?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("취소")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("삭제", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      bool success = await _postService.deleteComment(commentId);
+      if (success) {
+        _fetchComments();
+        _fetchPostDetail(); // 댓글 수 갱신을 위해
+        setState(() { _isContentChanged = true; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("댓글이 삭제되었습니다.")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("댓글 삭제 실패")));
+      }
+    }
+  }
+
+  // 댓글 수정 다이얼로그
+  void _showEditCommentDialog(GroupCommentResponse comment) {
+    final editController = TextEditingController(text: comment.content);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("댓글 수정"),
+        content: TextField(
+          controller: editController,
+          decoration: const InputDecoration(hintText: "수정할 내용을 입력하세요"),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("취소")),
+          TextButton(
+            onPressed: () async {
+              final newContent = editController.text.trim();
+              if (newContent.isNotEmpty) {
+                Navigator.pop(ctx);
+                bool success = await _postService.updateComment(comment.commentId, newContent);
+                if (success) {
+                  _fetchComments();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("댓글이 수정되었습니다.")));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("댓글 수정 실패")));
+                }
+              }
+            },
+            child: const Text("수정", style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
   }
 
   // 작성자 판단용
@@ -298,7 +402,6 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                         color: Colors.black87
                       ),
                     ),
-
                     const SizedBox(height: 40),
 
                     const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
@@ -310,7 +413,7 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                         const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey),
                         const SizedBox(width: 6),
                         Text(
-                          "댓글 ${_dummyComments.length}", 
+                          "댓글 ${_comments.length}", 
                           style: const TextStyle(fontWeight: FontWeight.bold)
                         ),
                       ],
@@ -318,7 +421,9 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                     const SizedBox(height: 16),
 
                     // 댓글 리스트 Placeholder
-                    if (post.commentCount == 0)
+                    if (_isLoadingComments)
+                      const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                    else if (_comments.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(30),
                         width: double.infinity,
@@ -333,47 +438,68 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-                      ),
-
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _dummyComments.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final comment = _dummyComments[index];
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const CircleAvatar(backgroundColor: Colors.grey, radius: 14, child: Icon(Icons.person, size: 16, color: Colors.white)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[50], // 연한 회색 배경
-                                  borderRadius: BorderRadius.circular(12), // 둥근 모서리
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(comment['author']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                        Text(comment['time']!, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(comment['content']!, style: const TextStyle(fontSize: 14)),
-                                  ],
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _comments.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final comment = _comments[index];
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const CircleAvatar(backgroundColor: Colors.grey, radius: 14, child: Icon(Icons.person, size: 16, color: Colors.white)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50], // 연한 회색 배경
+                                    borderRadius: BorderRadius.circular(12), // 둥근 모서리
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(comment.authorNickname, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          Row(
+                                            children: [
+                                              Text(comment.timeAgo, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                              if (comment.isMyComment)  // 본인 댓글일 경우 메뉴 버튼 표시
+                                                SizedBox(
+                                                  height: 20,
+                                                  width: 20,
+                                                  child: PopupMenuButton<String>(
+                                                    padding: EdgeInsets.zero,
+                                                    icon: const Icon(Icons.more_vert, size: 16, color: Colors.grey),
+                                                    onSelected: (value) {
+                                                      if (value == 'edit') _showEditCommentDialog(comment);
+                                                      else if (value == 'delete') _deleteComment(comment.commentId);
+                                                    },
+                                                    itemBuilder: (context) => [
+                                                      const PopupMenuItem(value: 'edit', height: 32, child: Text("수정", style: TextStyle(fontSize: 13))),
+                                                      const PopupMenuItem(value: 'delete', height: 32, child: Text("삭제", style: TextStyle(fontSize: 13, color: Colors.red))),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ]
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(comment.content, style: const TextStyle(fontSize: 14)),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                            ],
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -408,13 +534,7 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      onPressed: () {
-                        // TODO: 댓글 전송 로직 구현
-                        if (_commentController.text.isNotEmpty) {
-                          _commentController.clear();
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
+                      onPressed: _submitComment,
                       icon: const Icon(Icons.send, color: Colors.green),
                     ),
                   ],

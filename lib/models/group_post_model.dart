@@ -118,4 +118,20 @@ class GroupCommentResponse {
       isMyComment: json['myComment'] ?? false, // 백엔드 필드명 확인 필요 (isMyComment vs myComment)
     );
   }
+
+  String get timeAgo {
+    if (createdAt.isEmpty) return "";
+    try {
+      final date = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      if (difference.inMinutes < 1) return "방금 전";
+      if (difference.inMinutes < 60) return "${difference.inMinutes}분 전";
+      if (difference.inHours < 24) return "${difference.inHours}시간 전";
+      if (difference.inDays < 7) return "${difference.inDays}일 전";
+      return "${date.year}.${date.month}.${date.day}";
+    } catch (e) {
+      return createdAt;
+    }
+  }
 }

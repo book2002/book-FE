@@ -152,4 +152,98 @@ class GroupPostService {
       return false;
     }
   }
+
+  // [1] 댓글 목록 조회
+  Future<List<GroupCommentResponse>> getComments(int postId) async {
+    final url = Uri.parse('$baseUrl/api/v1/posts/$postId/comments');
+    try {
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        return body.map((json) => GroupCommentResponse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("댓글 조회 오류: $e");
+      return [];
+    }
+  }
+
+  // [2] 댓글 작성
+  Future<bool> createComment(int postId, String content) async {
+    final url = Uri.parse('$baseUrl/api/v1/posts/$postId/comments');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = GroupCommentRequest(content: content);
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("댓글 작성 오류: $e");
+      return false;
+    }
+  }
+
+  // [3] 댓글 수정
+  Future<bool> updateComment(int commentId, String content) async {
+    final url = Uri.parse('$baseUrl/api/v1/posts/comments/$commentId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = GroupCommentRequest(content: content);
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("댓글 수정 오류: $e");
+      return false;
+    }
+  }
+
+  // [4] 댓글 삭제
+  Future<bool> deleteComment(int commentId) async {
+    final url = Uri.parse('$baseUrl/api/v1/posts/comments/$commentId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print("댓글 삭제 오류: $e");
+      return false;
+    }
+  }
 }
