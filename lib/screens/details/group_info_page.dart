@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/discussion_model.dart';
 import 'package:flutter_app/models/group_model.dart';
 import 'package:flutter_app/models/group_post_model.dart';
+import 'package:flutter_app/screens/details/discussion_detail_page.dart';
 import 'package:flutter_app/screens/details/group_post_detail_page.dart';
 import 'package:flutter_app/screens/details/post_create_page.dart';
+import 'package:flutter_app/service/discussion_service.dart';
 import 'package:flutter_app/service/group_post_service.dart';
 import 'package:flutter_app/service/group_service.dart';
 
@@ -40,11 +43,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   // 그룹 서비스 인스턴스
   final GroupService _groupService = GroupService();
   final GroupPostService _postService = GroupPostService();
+  final DiscussionService _discussionService = DiscussionService();
 
   // [데이터 상태]
-  List<GroupPostResponse> _allPosts = [];
-  List<GroupPostResponse> _filteredPosts = [];
-  bool _isLoadingPosts = true;
+  List<dynamic> _allItems = [];
+  List<dynamic> _filteredItems = [];
+  bool _isLoading = true;
 
   // [필터 상태] 기본값: 모두 선택
   bool _showDiscussion = true;
@@ -53,31 +57,54 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   @override
   void initState() {
     super.initState();
-    _fetchPosts();
+    _fetchData();
   }
 
   // 게시글 목록 조회
-  Future<void> _fetchPosts() async {
-    setState(() { _isLoadingPosts = true; });
-    
-    // 페이지네이션은 현재 넉넉하게 50개로 설정
-    List<GroupPostResponse> posts = await _postService.getGroupPosts(widget.group.groupId, size: 50);
+  Future<void> _fetchData() async {
+    setState(() { _isLoading = true; });
 
-    if (mounted) {
-      setState(() {
-        _allPosts = posts;
-        _isLoadingPosts = false;
-        _applyFilter(); // 데이터 로드 후 필터 적용
+    try {
+      final results = await Future.wait([
+        _postService.getGroupPosts(widget.group.groupId, size: 50),
+        _discussionService.getDiscussions(widget.group.groupId, size: 50),
+      ]);
+
+      final posts = results[0] as List<GroupPostResponse>;
+      final discussions = results[1] as List<DiscussionResponse>;
+
+      // 두 리스트 병합
+      List<dynamic> combined = [...posts, ...discussions];
+
+      // 최신순 정렬 (createdAt 기준 내림차순)
+      combined.sort((a, b) {
+        DateTime dateA = DateTime.parse(a.createdAt);
+        DateTime dateB = DateTime.parse(b.createdAt);
+        return dateB.compareTo(dateA);
       });
+
+      if (mounted) {
+        setState(() {
+          _allItems = combined;
+          _isLoading = false;
+          _applyFilter();
+        });
+      }
+    } catch (e) {
+      print("데이터 로드 실패: $e");
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
   // 필터링 로직
   void _applyFilter() {
     setState(() {
-      _filteredPosts = _allPosts.where((post) {
-        if (post.category == '토론' && !_showDiscussion) return false;
-        if (post.category == '일반' && !_showGeneral) return false;
+      _filteredItems = _allItems.where((item) {
+        if (item is GroupPostResponse) {
+          return _showGeneral;
+        } else if (item is DiscussionResponse) {
+          return _showDiscussion;
+        }
         return true;
       }).toList();
     });
@@ -94,7 +121,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
     // 작성이 완료되어 true가 반환되면 목록 갱신
     if (created == true) {
-      _fetchPosts();
+      _fetchData();
     }
   }
 
@@ -253,9 +280,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
           // 하단 게시글 리스트
           Expanded(
-            child: _isLoadingPosts
+            child: _isLoading
               ? const Center(child: CircularProgressIndicator(),)
-              : _filteredPosts.isEmpty
+              : _filteredItems.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -271,12 +298,17 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                     ),
                   )
                 : ListView.separated(
-                    itemCount: _filteredPosts.length, // 데이터 개수만큼 생성
+                    itemCount: _filteredItems.length, // 데이터 개수만큼 생성
                     separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       // 해당 인덱스의 데이터 모델 가져오기
-                      final post = _filteredPosts[index];
-                      return _buildPostItem(post); // 모델 전달
+                      final item = _filteredItems[index];
+                      if (item is GroupPostResponse) {
+                        return _buildPostItem(item);
+                      } else if (item is DiscussionResponse) {
+                        return _buildDiscussionItem(item);
+                      }
+                      return const SizedBox.shrink();
                     },
                   ),
           ),
@@ -322,10 +354,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             ),
           ),
         );
-
-        if (needRefresh == true) {
-          _fetchPosts();
-        }
+        if (needRefresh == true) _fetchData();
       },
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -340,11 +369,11 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   child: const Icon(Icons.person, size: 16, color: Colors.grey),
                 ),
                 const SizedBox(width: 8),
-                // [수정] 작성자 이름 데이터 바인딩
+                // 제목
                 Text(post.authorNickname,
                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(width: 8),
-                // [신규] 카테고리 표시 (선택 사항)
+                // 카테고리 표시
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -354,7 +383,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   child: Text(post.category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
                 ),
                 const Spacer(),
-                // [수정] 시간 데이터 바인딩
+                // 시간 데이터 바인딩
                 Text(post.timeAgo,
                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],
@@ -375,18 +404,105 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             ),
             if (post.commentCount > 0) ...[
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.comment, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text("${post.commentCount}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                ],
-              )
+              _buildCommentCount(post.commentCount),
             ]
           ],
         ),
       )
     );
-    
+  }
+
+  // [신규] 토론 아이템
+  Widget _buildDiscussionItem(DiscussionResponse discussion) {
+    return InkWell(
+      onTap: () async {
+        final bool? needRefresh = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DiscussionDetailPage(
+              discussionId: discussion.discussionId,
+              previewDiscussion: discussion,
+              isLeader: false, // 필요 시 로직 추가
+            ),
+          ),
+        );
+        if (needRefresh == true) _fetchData();
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 토론은 카테고리 색상이나 텍스트를 다르게 할 수 있음
+            Row(
+              children: [
+                CircleAvatar(backgroundColor: Colors.grey[200], radius: 12, child: const Icon(Icons.person, size: 16, color: Colors.grey)),
+                const SizedBox(width: 8),
+                Text(discussion.authorNickname, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(width: 8),
+                // 토론 태그 (색상 강조)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                  child: const Text("토론", style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 8),
+                // 마감 여부 표시
+                if (discussion.isClosed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    child: const Text("마감됨", style: TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    child: const Text("진행중", style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
+                  ),
+                const Spacer(),
+                Text(discussion.timeAgo, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(discussion.topicTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(discussion.topicContent, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+            if (discussion.commentCount > 0) ...[
+              const SizedBox(height: 8),
+              _buildCommentCount(discussion.commentCount),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(String author, String category, String timeAgo) {
+    return Row(
+      children: [
+        CircleAvatar(backgroundColor: Colors.grey[200], radius: 12, child: const Icon(Icons.person, size: 16, color: Colors.grey)),
+        const SizedBox(width: 8),
+        Text(author, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4)),
+          child: Text(category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        ),
+        const Spacer(),
+        Text(timeAgo, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildCommentCount(int count) {
+    return Row(
+      children: [
+        const Icon(Icons.comment, size: 14, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text("$count", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
   }
 }
