@@ -23,29 +23,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // BookService 인스턴스 생성
   final BookService _bookService = BookService();
+  final AuthService _authService = AuthService();
 
   // 서버 데이터를 저장할 리스트 변수 추가
+  List<BookDto> _searchResults = [];   // 검색 결과
   List<BookShelfItemDto> _myReadingBooks = []; // 읽고 있는 책
   List<BookDto> _bestSellerBooks = []; // 베스트셀러
   List<BookDto> _newReleaseBooks = []; // 신간 도서
-  List<BookDto> _searchResults = [];   // 검색 결과
+  List<BookDto> _recommendedBooks = [];
 
   bool _isLoading = true;   // 로딩 상태 추가
-  final AuthService _authService = AuthService();
+  bool _isRecommendationLoading = false;
+
+  // 카테고리 목록
+  final List<String> _categories = [
+    "10대", "20대", "30대", "40대", "50대",
+    "힐링", "재테크", "자기개발", "여행", "추리/공포", "트렌드"
+  ];
+  String _selectedCategory = "20대";    // 기본값 20대
 
   // 초기 데이터 로딩을 위한 initState
   @override
   void initState() {
     super.initState();
     _fetchHomeData();
+    _fetchRecommendations(_selectedCategory);
   }
 
   // 홈 화면에 필요한 데이터(내 책장, 추천, 신간)를 병렬로 가져오는 함수
   Future<void> _fetchHomeData() async {
-    // [변경 사항] RefreshIndicator 사용 시 로딩 표시가 이중으로 뜨지 않도록 조건부 로딩 설정 가능하나,
-    // 여기서는 간단히 로딩 상태를 다시 true로 설정하여 갱신 중임을 명시하거나, 
-    // onRefresh에서 호출될 때는 setState를 최소화할 수 있습니다.
-    // 여기서는 기본 로직 유지.
     setState(() { _isLoading = true; });
     try {
       // Future.wait를 사용하여 모든 API 요청 동시에 시작
@@ -73,6 +79,27 @@ class _HomeScreenState extends State<HomeScreen> {
       print("홈 데이터 로드 중 오류 발생: $e");
     } finally {
       setState(() { _isLoading = false; });
+    }
+  }
+
+  // 추천 도서 로드 함수
+  Future<void> _fetchRecommendations(String category) async {
+    setState(() {
+      _selectedCategory = category;
+      _isRecommendationLoading = true;
+    });
+
+    try {
+      final books = await _bookService.getRecommendations(category);
+      if (mounted) {
+        setState(() {
+          _recommendedBooks = books.take(5).toList(); // 5권 정도만 표시
+          _isRecommendationLoading = false;
+        });
+      }
+    } catch (e) {
+      print("추천 도서 로드 오류: $e");
+      if (mounted) setState(() { _isRecommendationLoading = false; });
     }
   }
 
@@ -110,7 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: _fetchHomeData,
+      onRefresh: () async {
+        await _fetchHomeData();
+        await _fetchRecommendations(_selectedCategory);
+      },
       color: Colors.green,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),  //margin 설정
@@ -131,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16,),
 
-            // [변경 사항] 검색 결과가 있을 경우 검색 결과 목록 표시
+            // 검색 결과가 있을 경우 검색 결과 목록 표시
             if (_searchResults.isNotEmpty) ...[
               Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -289,18 +319,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 20,),
               
-              // --- 베스트셀러 ---
-              // Padding(
-              //   padding: const EdgeInsets.only(left: 10),
-              //   child: Text("🔥 이번 주 베스트셀러",
-              //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              //             fontWeight: FontWeight.bold,
-              //     )
-              //   ),
-              // ),
-              // _isLoading
-              //   ? const Center(child: CircularProgressIndicator())
-              //   : BookListWidget(books: _bestSellerBooks, tabType: 'before'),
+              // --- [신규] 3. 추천 도서 섹션 ---
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Text("📚 맞춤 추천 도서", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 10),
+              
+              // 카테고리 태그 (가로 스크롤)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: (_categories as List? ?? []).map((category) {
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            _fetchRecommendations(category);
+                          }
+                        },
+                        selectedColor: Colors.green,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        backgroundColor: Colors.grey[100],
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 추천 도서 목록
+              _isRecommendationLoading
+                ? const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                : _recommendedBooks.isEmpty
+                  ? const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("추천 도서가 없습니다.")))
+                  : BookListWidget(books: _recommendedBooks, tabType: 'before'),
+              
+              const SizedBox(height: 20),
 
             ]
 
