@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/habit_model.dart';
 import 'package:flutter_app/screens/details/loan_info_page.dart';
+import 'package:flutter_app/service/book_service.dart';
+import 'package:flutter_app/service/habit_service.dart';
 import 'package:flutter_app/widget/HabitTrackerWidget.dart';
-import 'package:flutter_app/widget/StopWatchWidget.dart';
+import 'package:flutter_app/widget/habit_setting_page.dart';
+import 'package:flutter_app/widget/timer_page.dart';
 
 class HelperScreen extends StatefulWidget {
   const HelperScreen({Key? key}) : super(key: key);
@@ -11,8 +15,96 @@ class HelperScreen extends StatefulWidget {
 }
 
 class _HelperScreenState extends State<HelperScreen> {
-    // [추가] 사용하신 Base64 이미지 문자열을 변수로 분리 (코드 가독성 위함)
-  final String _bookImageBase64 = "https://contents.kyobobook.co.kr/sih/fit-in/400x0/pdt/9788966260959.jpg";
+  final HabitService _habitService = HabitService();
+  final BookService _bookService = BookService();
+
+  ReadingGoalResponse? _goal;
+  int _readCount = 0; // 올해 읽은 책 수 (COMPLETED 상태)
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGoalAndProgress();
+  }
+
+  // 목표 및 진행 상황 조회
+  Future<void> _fetchGoalAndProgress() async {
+    setState(() { _isLoading = true; });
+    try {
+      final results = await Future.wait([
+        _habitService.getCurrentReadingGoal(),
+        _bookService.getMyShelfBooks(), // 내 책장 목록
+      ]);
+
+      final goal = results[0] as ReadingGoalResponse?;
+      final books = results[1] as List<dynamic>; // BookShelfItemDto 리스트
+
+      // 읽은 책 수 계산 (COMPLETED 상태인 책)
+      // 정확히는 '올해' 읽은 책이어야 하나, BookShelfItem에 완독일 정보가 없음 -> 전체 완독 수로 대체
+      // 추후 BookShelfItem에 finishedDate 필드가 추가되어야 함.
+      int count = books.where((b) => b.state == 'COMPLETED').length;
+
+      if (mounted) {
+        setState(() {
+          _goal = goal;
+          _readCount = count;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("도우미 데이터 로드 오류: $e");
+      if (mounted) setState(() { _isLoading = false; });
+    }
+  }
+
+  // 목표 생성 모달
+  void _showGoalDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("올해 독서 목표 설정"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("올해 몇 권의 책을 읽고 싶으신가요?"),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "목표 권수",
+                border: OutlineInputBorder(),
+                suffixText: "권",
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("취소")),
+          ElevatedButton(
+            onPressed: () async {
+              final target = int.tryParse(controller.text);
+              if (target == null || target <= 0) return;
+              
+              Navigator.pop(context);
+              // 기본적으로 올해(Current Year)로 설정
+              bool success = await _habitService.createReadingGoal(DateTime.now().year, target);
+              if (success) {
+                _fetchGoalAndProgress(); // 갱신
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("목표가 설정되었습니다!")));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("설정 실패")));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text("설정", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,52 +115,108 @@ class _HelperScreenState extends State<HelperScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Text.rich(
-                TextSpan(
-                  // 전체 텍스트에 공통으로 적용될 기본 스타일 유지
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 30,
-                    // 기본 색상이 필요하다면 여기에 color: Colors.black 등을 명시 가능
-                  ),
-                  children: [
-                    // [변경] 텍스트를 쪼개서 입력
-                    const TextSpan(text: "목표까지 "), // 앞부분 텍스트
+              child: _isLoading 
+                ? const CircularProgressIndicator()
+                : _goal == null
+                  // 목표가 없을 때
+                  ? GestureDetector(
+                      onTap: _showGoalDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          "올해 목표가 없어요.\n목표를 생성해보세요!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )
+                  // 목표가 있을 때
+                  : Text.rich(
                     TextSpan(
-                      text: "2", // 색상을 바꿀 숫자
-                      // [변경] 숫자 '2'에만 적용할 특정 색상 지정 (예: primary color 또는 특정 색)
-                      style: TextStyle(color: Colors.green), 
+                      // 전체 텍스트에 공통으로 적용될 기본 스타일
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 30,
+                      ),
+                      children: [
+                        const TextSpan(text: "목표까지 "),
+                        TextSpan(
+                          text: "${(_goal!.targetBooks - _readCount).clamp(0, 999)}",   // 남은 권수 (음수 방지)
+                          style: TextStyle(color: Colors.green), 
+                        ),
+                        const TextSpan(text: "권 남았어요!"),
+                      ],
                     ),
-                    const TextSpan(text: "권 남았어요!"), // 뒷부분 텍스트 (\n 포함)
-                  ],
-                ),
-                textAlign: TextAlign.center,
-              ),
+                    textAlign: TextAlign.center,
+                  ),
             ),
             
-            // [변경] 고정된 SizedBox(height) 대신 Spacer를 사용하여 남는 공간을 유연하게 배분
-            //const Spacer(flex: 1),
-
-            // [변경] Expanded 사용: 해빗트래커가 남은 공간의 일부를 차지하도록 변경 (비율 조정 가능)
             const Expanded(
-              flex: 2, // 필요에 따라 flex 값 조절 (예: 트래커가 스톱워치보다 더 많은 공간 차지)
+              flex: 2, // 필요에 따라 flex 값 조절 (공간 차지 비율 설정)
               child: HabitTracker(), 
             ),
 
-            //const Spacer(flex: 1),
-            
-            //const SizedBox(height: 24,),
             Expanded(
               child: Padding(
-                //타이머 주변 여백 설정
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 10,),
-                child: const StopwatchWidget(),  //스톱워치 연결
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    // 습관 설정 버튼
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const HabitSettingPage()));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.alarm, color: Colors.orange, size: 36),
+                              SizedBox(height: 8),
+                              Text("습관 설정", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // 독서 타이머 버튼
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const TimerPage()));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.timer, color: Colors.blue, size: 36),
+                              SizedBox(height: 8),
+                              Text("독서 타이머", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            //const Spacer(flex: 1,),
-            //const SizedBox(height: 10,),
-            
+          
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 10, vertical: 10),
               child: Column(
