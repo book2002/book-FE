@@ -54,39 +54,6 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
     }
   }
 
-  // [신규 추가] 더미 데이터 리스트
-  final List<LoanRecordModel> _dummyLoans = [
-    LoanRecordModel(
-      title: "클린 코드",
-      libraryName: "부경대학교 중앙도서관",
-      loanDate: "2025.10.07",
-      returnDate: "2025.11.24",
-      coverColor: Colors.teal,
-    ),
-    LoanRecordModel(
-      title: "지적 대화를 위한 넓고 얕은 지식 1",
-      libraryName: "부경대학교 중앙도서관",
-      loanDate: "2025.10.07",
-      returnDate: "2025.11.24",
-      coverColor: Colors.blueAccent,
-    ),
-    LoanRecordModel(
-      title: "불편한 편의점",
-      libraryName: "서초구립반포도서관",
-      loanDate: "2025.10.25",
-      returnDate: "2025.11.28",
-      coverColor: Colors.orangeAccent,
-    ),
-    LoanRecordModel(
-      title: "총 균 쇠",
-      libraryName: "국립중앙도서관",
-      loanDate: "2025.11.01",
-      returnDate: "2025.11.30",
-      coverColor: Colors.brown,
-    ),
-    
-  ];
-
   // 책 제목으로 이미지 URL을 가져오는 함수 (메모이제이션 고려 가능하나 여기선 단순 호출)
   Future<String?> _fetchBookImage(String title) async {
     try {
