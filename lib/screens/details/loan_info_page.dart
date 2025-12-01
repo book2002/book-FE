@@ -212,17 +212,21 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                 children: [
                   // 책 제목 (공간 차지)
                   Expanded(
-                    child: Text(
-                      loan.bookTitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: loan.returned ? Colors.grey : Colors.black87,
-                        decoration: loan.returned ? TextDecoration.lineThrough : null,
+                    child: Padding(
+                      padding: EdgeInsetsGeometry.only(top: 10),
+                      child: Text(
+                        loan.bookTitle,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: loan.returned ? Colors.grey : Colors.black87,
+                          decoration: loan.returned ? TextDecoration.lineThrough : null,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    )
+                    
                   ),
                   // 수정/삭제 메뉴
                   PopupMenuButton<String>(
@@ -264,6 +268,13 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                   const Text("반납 ", style: TextStyle(fontSize: 12, color: Colors.grey)),
                   Text(loan.dueDate, style: const TextStyle(fontSize: 12, color: Colors.redAccent)), // 반납일 강조
                   const SizedBox(width: 10),
+                  
+                ],
+              ),
+              const SizedBox(height: 5,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
                   if (loan.returned)
                     const Text("[반납완료]", style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold))
                   else
@@ -274,9 +285,10 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                         decoration: BoxDecoration(border: Border.all(color: Colors.green), borderRadius: BorderRadius.circular(12)),
                         child: const Text("반납하기", style: TextStyle(fontSize: 10, color: Colors.green)),
                       ),
-                    )
+                    ),
+                  const SizedBox(width: 15,),
                 ],
-              ),
+              )
             ],
           ),
         ),

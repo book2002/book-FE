@@ -93,12 +93,12 @@ class BookListWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       book.thumbnail.isNotEmpty ? book.thumbnail : 'https://via.placeholder.com/100x150',   // 이미지 없을 경우 임의 이미지
-                      width: 100,
-                      height: 150,
+                      width: 80,
+                      height: 120,
                       fit: BoxFit.cover,
                       // 이미지 로드 에러 처리
                       errorBuilder: (context, error, stackTrace) => Container(
-                        width: 100, height: 150, color: Colors.grey[300], child: const Icon(Icons.broken_image),
+                        width: 80, height: 120, color: Colors.grey[300], child: const Icon(Icons.broken_image),
                       ),
                     ),
                   ),
@@ -132,7 +132,7 @@ class BookListWidget extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              const SizedBox(width: 170),
+                              const SizedBox(width: 24),
                               Expanded(
                                 child: LinearProgressIndicator(
                                   borderRadius: BorderRadius.circular(16),

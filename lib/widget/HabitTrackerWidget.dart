@@ -119,7 +119,7 @@ class _HabitTrackerState extends State<HabitTracker> {
                   const SizedBox(height: 6),
                   // 원형 아이콘
                   CircleAvatar(
-                    radius: circleSize/2,   // 반지름
+                    radius: circleSize/2 - 1,   // 반지름
                     backgroundColor: isChecked
                         ? Colors.green
                         : Colors.grey[300],
