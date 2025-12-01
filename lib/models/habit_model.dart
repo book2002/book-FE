@@ -69,11 +69,11 @@ class HabitTrackerResponse {
   }
 }
 
-// 5. 습관(알림) 설정 모델 (기존 코드 유지 여부 확인 필요하나 일단 유지)
+// 5. 독서 습관 응답 (GET /api/v1/reading-habit)
 class ReadingHabitResponse {
   final int id;
-  final String targetTime; 
-  final List<String> recurringDays; 
+  final String targetTime; // HH:mm
+  final List<String> recurringDays; // ["MON", "TUE"]
   final bool isActive;
 
   ReadingHabitResponse({
@@ -87,18 +87,37 @@ class ReadingHabitResponse {
     return ReadingHabitResponse(
       id: json['id'] ?? 0,
       targetTime: json['targetTime'] ?? '',
-      recurringDays: List<String>.from(json['recurringDays'] ?? []),
-      isActive: json['isActive'] ?? false,
+      recurringDays: (json['recurringDays'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? [],
+      isActive: json['active'] ?? false,
     );
   }
 }
 
-class HabitStatusUpdateRequest {
-  final bool isActive;
+// 6. 독서 습관 생성/수정 요청 (POST, PUT /api/v1/reading-habit)
+class ReadingHabitRequest {
+  final String targetTime; // HH:mm
+  final List<String> daysOfWeek; // ["MON", "TUE"]
 
-  HabitStatusUpdateRequest({required this.isActive});
+  ReadingHabitRequest({
+    required this.targetTime,
+    required this.daysOfWeek,
+  });
 
   Map<String, dynamic> toJson() => {
-    'isActive': isActive,
+    'targetTime': targetTime,
+    'daysOfWeek': daysOfWeek,
+  };
+}
+
+// 7. 독서 습관 알림 상태 변경 요청 (PUT /api/v1/reading-habit/{habitId}/active)
+class HabitActiveUpdateRequest {
+  final bool active;
+
+  HabitActiveUpdateRequest({required this.active});
+
+  Map<String, dynamic> toJson() => {
+    'active': active,
   };
 }

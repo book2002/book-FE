@@ -1,5 +1,3 @@
-// [신규] 독서 목표 및 해빗 트래커 관련 서비스
-
 import 'dart:convert';
 import 'package:flutter_app/constants.dart';
 import 'package:flutter_app/models/habit_model.dart';
@@ -134,6 +132,127 @@ class HabitService {
     } catch (e) {
       // 404 등 기록이 없을 때 null 반환
       return null;
+    }
+  }
+
+  // [6] 독서 습관 목록 조회
+  Future<List<ReadingHabitResponse>> getHabits() async {
+    final url = Uri.parse('$baseUrl/api/v1/reading-habit');
+    try {
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        return body.map((json) => ReadingHabitResponse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("습관 목록 조회 오류: $e");
+      return [];
+    }
+  }
+
+  // [7] 독서 습관 생성
+  Future<bool> createHabit(String targetTime, List<String> daysOfWeek) async {
+    final url = Uri.parse('$baseUrl/api/v1/reading-habit');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = ReadingHabitRequest(targetTime: targetTime, daysOfWeek: daysOfWeek);
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("습관 생성 오류: $e");
+      return false;
+    }
+  }
+
+  // [8] 독서 습관 수정
+  Future<bool> updateHabit(int habitId, String targetTime, List<String> daysOfWeek) async {
+    final url = Uri.parse('$baseUrl/api/v1/reading-habit/$habitId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = ReadingHabitRequest(targetTime: targetTime, daysOfWeek: daysOfWeek);
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("습관 수정 오류: $e");
+      return false;
+    }
+  }
+
+  // [9] 독서 습관 삭제
+  Future<bool> deleteHabit(int habitId) async {
+    final url = Uri.parse('$baseUrl/api/v1/reading-habit/$habitId');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print("습관 삭제 오류: $e");
+      return false;
+    }
+  }
+
+  // [10] 알림 활성화/비활성화
+  Future<bool> updateHabitActive(int habitId, bool isActive) async {
+    final url = Uri.parse('$baseUrl/api/v1/reading-habit/$habitId/active');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = HabitActiveUpdateRequest(active: isActive);
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      print(response.body);
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("습관 상태 변경 오류: $e");
+      return false;
     }
   }
 }

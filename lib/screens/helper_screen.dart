@@ -4,7 +4,8 @@ import 'package:flutter_app/screens/details/loan_info_page.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/habit_service.dart';
 import 'package:flutter_app/widget/HabitTrackerWidget.dart';
-import 'package:flutter_app/widget/StopWatchWidget.dart';
+import 'package:flutter_app/widget/habit_setting_page.dart';
+import 'package:flutter_app/widget/timer_page.dart';
 
 class HelperScreen extends StatefulWidget {
   const HelperScreen({Key? key}) : super(key: key);
@@ -161,8 +162,58 @@ class _HelperScreenState extends State<HelperScreen> {
 
             Expanded(
               child: Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 10,),
-                child: const StopwatchWidget(),  //스톱워치 연결
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    // 습관 설정 버튼
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const HabitSettingPage()));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.alarm, color: Colors.orange, size: 36),
+                              SizedBox(height: 8),
+                              Text("습관 설정", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // 독서 타이머 버튼
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const TimerPage()));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.timer, color: Colors.blue, size: 36),
+                              SizedBox(height: 8),
+                              Text("독서 타이머", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           
