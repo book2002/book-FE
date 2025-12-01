@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/habit_model.dart';
+import 'package:flutter_app/models/loan_model.dart';
 import 'package:flutter_app/screens/details/loan_info_page.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/habit_service.dart';
+import 'package:flutter_app/service/loan_service.dart';
 import 'package:flutter_app/widget/HabitTrackerWidget.dart';
 import 'package:flutter_app/widget/habit_setting_page.dart';
 import 'package:flutter_app/widget/timer_page.dart';
@@ -17,38 +19,59 @@ class HelperScreen extends StatefulWidget {
 class _HelperScreenState extends State<HelperScreen> {
   final HabitService _habitService = HabitService();
   final BookService _bookService = BookService();
+  final LoanService _loanService = LoanService();
 
   ReadingGoalResponse? _goal;
   int _readCount = 0; // 올해 읽은 책 수 (COMPLETED 상태)
+
+  LoanResponse? _urgentLoan;  //대출 정보
+  String? _urgentBookImage;   // 썸네일 URL
+
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchGoalAndProgress();
+    _fetchAllData();
   }
 
   // 목표 및 진행 상황 조회
-  Future<void> _fetchGoalAndProgress() async {
+  Future<void> _fetchAllData() async {
     setState(() { _isLoading = true; });
     try {
       final results = await Future.wait([
         _habitService.getCurrentReadingGoal(),
         _bookService.getMyShelfBooks(), // 내 책장 목록
+        _loanService.getLoans(),        // 대출 목록 조회
       ]);
 
       final goal = results[0] as ReadingGoalResponse?;
-      final books = results[1] as List<dynamic>; // BookShelfItemDto 리스트
+      final books = results[1] as List<dynamic>; //
+      final loans = results[2] as List<LoanResponse>;
 
       // 읽은 책 수 계산 (COMPLETED 상태인 책)
       // 정확히는 '올해' 읽은 책이어야 하나, BookShelfItem에 완독일 정보가 없음 -> 전체 완독 수로 대체
       // 추후 BookShelfItem에 finishedDate 필드가 추가되어야 함.
       int count = books.where((b) => b.state == 'COMPLETED').length;
 
+      // 반납일 가장 가까운 책 추출
+      final activeLoans = loans.where((l) => !l.returned).toList();
+      activeLoans.sort((a, b) => a.dDayValue.compareTo(b.dDayValue)); // 오름차순 정렬
+      final urgent = activeLoans.isNotEmpty ? activeLoans.first : null;
+
+      // 이미지 미리 가져오기
+      String? imageUrl;
+      if (urgent != null) {
+        final searchRes = await _bookService.getSearchBooks(urgent.bookTitle);
+        if (searchRes.isNotEmpty) imageUrl = searchRes.first.thumbnail;
+      }
+
       if (mounted) {
         setState(() {
           _goal = goal;
           _readCount = count;
+          _urgentLoan = urgent;
+          _urgentBookImage = imageUrl;
           _isLoading = false;
         });
       }
@@ -92,7 +115,7 @@ class _HelperScreenState extends State<HelperScreen> {
               // 기본적으로 올해(Current Year)로 설정
               bool success = await _habitService.createReadingGoal(DateTime.now().year, target);
               if (success) {
-                _fetchGoalAndProgress(); // 갱신
+                _fetchAllData(); // 갱신
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("목표가 설정되었습니다!")));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("설정 실패")));
@@ -217,28 +240,33 @@ class _HelperScreenState extends State<HelperScreen> {
               ),
             ),
           
+            // 대출 정보 섹션
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 10, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text.rich(
-                    TextSpan(
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        //fontSize: 30,
-                      ),
-                      children: [
-                        const TextSpan(text: "  클린 코드 및 1권의 반납일이 "),
-                        const TextSpan(
-                          text: "D-2",
-                          style: TextStyle(color: Colors.orange)
+                  if (_urgentLoan != null)
+                    Text.rich(
+                      TextSpan(
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          //fontSize: 30,
                         ),
-                        const TextSpan(text: "에요."),
-                      ]
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                        children: [
+                          TextSpan(text: "  ${_urgentLoan!.bookTitle} 반납일이 "),
+                          TextSpan(
+                            text: _urgentLoan!.dDay,
+                            style: const TextStyle(color: Colors.orange)
+                          ),
+                          const TextSpan(text: "에요."),
+                        ]
+                      ),
+                      textAlign: TextAlign.center,
+                    )
+                  else
+                    Text("  반납 예정인 도서가 없어요.", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  
                   SizedBox(height: 10,),
                   Container(
                     width: double.infinity,   // 부모 위젯이 허락하는 최대 너비를 가짐
@@ -252,12 +280,16 @@ class _HelperScreenState extends State<HelperScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                          if (_urgentLoan != null)
+                            Expanded( // 텍스트 넘침 방지
+                              child: Row(
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                               Text(
-                                "📍 부경대학교 중앙도서관",
-                                style: TextStyle(
+                                "📍 ${_urgentLoan!.libraryName}",
+                                style: const TextStyle(
                                   fontSize: 10
                                 ),
                               ),
@@ -271,10 +303,12 @@ class _HelperScreenState extends State<HelperScreen> {
                                   SizedBox(
                                     width: 50,
                                     height: 75,
-                                    child: Image.network(
-                                      "https://contents.kyobobook.co.kr/sih/fit-in/400x0/pdt/9788966260959.jpg",
-                                      fit: BoxFit.cover, // 이미지가 영역을 벗어나지 않도록 fit 설정
-                                    ),
+                                    child: _urgentBookImage != null 
+                                      ? Image.network(
+                                        _urgentBookImage!,
+                                        fit: BoxFit.cover, // 이미지가 영역을 벗어나지 않도록 fit 설정
+                                      )
+                                      : Container(color: Colors.grey[200], child: const Icon(Icons.book, size: 30, color: Colors.grey)),
                                   ),
                                   
                                   const SizedBox(width: 12,),
@@ -282,26 +316,34 @@ class _HelperScreenState extends State<HelperScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        "클린 코드",
+                                        _urgentLoan!.bookTitle,
+                                        maxLines: 1, overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                       ),
-                                      Text("반납일 : 2025-11-24")
+                                      Text("반납일 : ${_urgentLoan!.dueDate}")
                                     ],
                                   )
                                 ],
                               )
-                              
                             ],
-                          ),
+                                  ),
+                                  
+                                ],                    
+                              )
+                            )
+                          else
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Text("대출 중인 도서가 없습니다."),
+                            ),
                           InkWell(
                             onTap: () {
-                              // [신규 추가] 클릭 시 LoanInfoPage로 화면 이동
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const LoanInfoPage()),
-                              );
+                              ).then((_) => _fetchAllData());
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Icon(
@@ -310,17 +352,15 @@ class _HelperScreenState extends State<HelperScreen> {
                               color: Colors.grey,
                             ),
                           ),
-                        ],                    
+                        ],
                     )
                   ),
                 ],
               )
-              
             ),
           ],
-        ),
-      )
+        )
+      ),
     );
-    
   }
 }
