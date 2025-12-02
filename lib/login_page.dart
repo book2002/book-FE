@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart';
 import 'package:flutter_app/google_auth_webview.dart';
 import 'package:flutter_app/models/auth_model.dart';
-import 'package:flutter_app/profile_setting_page.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_app/signup_page.dart';
 
