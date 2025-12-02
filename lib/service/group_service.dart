@@ -199,4 +199,31 @@ class GroupService {
       return false;
     }
   }
+
+  // [7] 독서 모임 삭제
+  Future<bool> deleteGroup(int groupId) async {
+    final url = Uri.parse('$baseUrl/api/v1/groups/$groupId/delete');
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print("모임 삭제 성공");
+        return true;
+      } else {
+        print("모임 삭제 실패: ${response.statusCode} - ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("모임 삭제 오류: $e");
+      return false;
+    }
+  }
 }
