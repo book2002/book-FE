@@ -160,7 +160,6 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      //final url = Uri.parse("http://172.30.1.53:8080/api/v1/member/signup");
       final url = Uri.parse("$baseUrl/api/v1/member/signup");    //웹 환경에서는 localhost 사용
 
       final memberRequest = MemberRequest(email: email, password: password, name: name);
@@ -210,8 +209,8 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -227,221 +226,223 @@ class _SignupPageState extends State<SignupPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          // 실시간 유효성 검사 모드 -> 입력 후 다른 곳 터치 시 자동으로 유효성 검사 수행
-          autovalidateMode: AutovalidateMode.onUnfocus,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(    // 추후 변경될 가능성이 있으므로 const 사용 x
-                  labelText: "이메일",
-                  border: const OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: primaryColor, width: 1.8)
-                  ),
-
-                  //오류 시 테두리 style 지정
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 1.5)
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 2.5)
-                  ),
-
-                  //오류 메시지 style 지정
-                  errorStyle: TextStyle(
-                    color: errorColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                keyboardType: TextInputType.emailAddress,   //키보드 스타일 지정
-
-                //Form 위젯과 함께 사용 - 사용자 입력이 유효한지 실시간으로 확인
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '이메일을 입력해주세요.'; // 1. 입력이 비어있을 때 표시할 문구
-                  }
-                  // 이메일 형식 검사를 위한 정규식
-                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                  if (!emailRegex.hasMatch(value)) {
-                    return '유효한 이메일 형식이 아닙니다.'; // 2. 형식 오류
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 18,),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: "이름",
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: primaryColor, width: 1.8)
-                  ),
-
-                  //오류 시 테두리 style 지정
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 1.5)
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 2.5)
-                  ),
-
-                  //오류 메시지 style 지정
-                  errorStyle: TextStyle(
-                    color: errorColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                keyboardType: TextInputType.text,
-
-                //사용자 입력이 유효한지 실시간으로 확인
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '이름을 입력해주세요.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 18,),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _isPasswordObscured,  //텍스트 가림 처리
-                decoration: InputDecoration(
-                  labelText: "비밀번호",
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: primaryColor, width: 1.8)
-                  ),
-
-                  //오류 시 테두리 style 지정
-                  errorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 1.5)
-                  ),
-                  focusedErrorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 2.5)
-                  ),
-
-                  //오류 메시지 style 지정
-                  errorStyle: const TextStyle(
-                    color: errorColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            // 실시간 유효성 검사 모드 -> 입력 후 다른 곳 터치 시 자동으로 유효성 검사 수행
+            autovalidateMode: AutovalidateMode.onUnfocus,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(    // 추후 변경될 가능성이 있으므로 const 사용 x
+                    labelText: "이메일",
+                    border: const OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryColor, width: 1.8)
                     ),
-                    onPressed: () {
-                      //setState 호출로 상태 변경
-                      setState(() {
-                        _isPasswordObscured = !_isPasswordObscured;
-                      });
-                    },
-                    padding: EdgeInsets.only(right: 15),
-                  )
-                ),
 
-                //사용자 입력이 유효한지 실시간으로 확인
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '비밀번호를 입력해주세요.'; // 1. 입력이 비어있을 때 표시할 문구
-                  }
-                  if (value.length < 8) {
-                    return '비밀번호를 8자 이상 입력하세요.'; // 2. 형식 오류
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 18,),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _isConfirmPasswordObscured,
-                decoration: InputDecoration(
-                  labelText: "비밀번호 확인",
-                  border: const OutlineInputBorder(),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: primaryColor, width: 1.8)
-                  ),
-
-                  //오류 시 테두리 style 지정
-                  errorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 1.5)
-                  ),
-                  focusedErrorBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: errorColor, width: 2.5)
-                  ),
-
-                  //오류 메시지 style 지정
-                  errorStyle: const TextStyle(
-                    color: errorColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isConfirmPasswordObscured ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
+                    //오류 시 테두리 style 지정
+                    errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 1.5)
                     ),
-                    onPressed: () {
-                      //setState 호출로 상태 변경
-                      setState(() {
-                        _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
-                      });
-                    },
-                    padding: EdgeInsets.only(right: 15),
-                  )
-                ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 2.5)
+                    ),
 
-                validator: (value) {
-                  if (value != _passwordController.text.trim()) {
-                    return '비밀번호가 일치하지 않습니다.';
-                  }
-
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 24,),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _signUp,   //로딩 중일 경우 버튼 비활성화
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                ? const SizedBox(
-                  height: 20, width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: Colors.white,
+                    //오류 메시지 style 지정
+                    errorStyle: TextStyle(
+                      color: errorColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ) 
-                : Text(
-                  "회원가입",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+
+                  keyboardType: TextInputType.emailAddress,   //키보드 스타일 지정
+
+                  //Form 위젯과 함께 사용 - 사용자 입력이 유효한지 실시간으로 확인
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이메일을 입력해주세요.'; // 1. 입력이 비어있을 때 표시할 문구
+                    }
+                    // 이메일 형식 검사를 위한 정규식
+                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value)) {
+                      return '유효한 이메일 형식이 아닙니다.'; // 2. 형식 오류
+                    }
+
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18,),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: "이름",
+                    border: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryColor, width: 1.8)
+                    ),
+
+                    //오류 시 테두리 style 지정
+                    errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 1.5)
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 2.5)
+                    ),
+
+                    //오류 메시지 style 지정
+                    errorStyle: TextStyle(
+                      color: errorColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  keyboardType: TextInputType.text,
+
+                  //사용자 입력이 유효한지 실시간으로 확인
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이름을 입력해주세요.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18,),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _isPasswordObscured,  //텍스트 가림 처리
+                  decoration: InputDecoration(
+                    labelText: "비밀번호",
+                    border: const OutlineInputBorder(),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryColor, width: 1.8)
+                    ),
+
+                    //오류 시 테두리 style 지정
+                    errorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 1.5)
+                    ),
+                    focusedErrorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 2.5)
+                    ),
+
+                    //오류 메시지 style 지정
+                    errorStyle: const TextStyle(
+                      color: errorColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        //setState 호출로 상태 변경
+                        setState(() {
+                          _isPasswordObscured = !_isPasswordObscured;
+                        });
+                      },
+                      padding: EdgeInsets.only(right: 15),
+                    )
+                  ),
+
+                  //사용자 입력이 유효한지 실시간으로 확인
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '비밀번호를 입력해주세요.'; // 1. 입력이 비어있을 때 표시할 문구
+                    }
+                    if (value.length < 8) {
+                      return '비밀번호를 8자 이상 입력하세요.'; // 2. 형식 오류
+                    }
+
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18,),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _isConfirmPasswordObscured,
+                  decoration: InputDecoration(
+                    labelText: "비밀번호 확인",
+                    border: const OutlineInputBorder(),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryColor, width: 1.8)
+                    ),
+
+                    //오류 시 테두리 style 지정
+                    errorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 1.5)
+                    ),
+                    focusedErrorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor, width: 2.5)
+                    ),
+
+                    //오류 메시지 style 지정
+                    errorStyle: const TextStyle(
+                      color: errorColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isConfirmPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        //setState 호출로 상태 변경
+                        setState(() {
+                          _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
+                        });
+                      },
+                      padding: EdgeInsets.only(right: 15),
+                    )
+                  ),
+
+                  validator: (value) {
+                    if (value != _passwordController.text.trim()) {
+                      return '비밀번호가 일치하지 않습니다.';
+                    }
+
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24,),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _signUp,   //로딩 중일 경우 버튼 비활성화
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                  ? const SizedBox(
+                    height: 20, width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: Colors.white,
+                    ),
+                  ) 
+                  : Text(
+                    "회원가입",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              )
-            ],
-          ),
-        )
-        
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 0),
+              ],
+            ),
+          )
+        ),
       ),
     );
   }
