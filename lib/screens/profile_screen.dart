@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/models/group_model.dart';
 import 'package:flutter_app/models/record_model.dart';
+import 'package:flutter_app/screens/details/group_info_page.dart';
 import 'package:flutter_app/service/book_service.dart';
+import 'package:flutter_app/service/group_service.dart';
 import 'package:flutter_app/service/record_service.dart';
+import 'package:flutter_app/service/refresh_service.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
 import 'package:flutter_app/service/auth_service.dart'; // AuthService
 import 'package:flutter_app/constants.dart'; // URL 상수
@@ -20,16 +24,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   final RecordService _recordService = RecordService();
   final BookService _bookService = BookService();
+  final GroupService _groupService = GroupService();
 
   // 프로필 데이터를 저장할 변수
   Map<String, dynamic>? _profileData;
   List<ReviewResponse> _publicReviews = [];   // 공개 감상문 리스트
+  List<GroupResponse> _myGroups = [];          // 가입한 모임 목록
   bool _isLoading = true;
   bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
+    _fetchProfileAndReviews();
+    RefreshService().reviewNotifier.addListener(_onReviewUpdated);
+  }
+
+  @override
+  void dispose() {
+    RefreshService().reviewNotifier.removeListener(_onReviewUpdated);
+    super.dispose();
+  }
+
+  void _onReviewUpdated() {
+    print("프로필 화면: 리뷰 변경 감지 -> 갱신");
     _fetchProfileAndReviews();
   }
 
@@ -63,11 +81,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       final reviews = await _recordService.getReviewsByProfileId();
+      final groups = await _groupService.getMyGroups();
 
       if (response.statusCode == 200) {
         setState(() {
           _profileData = jsonDecode(utf8.decode(response.bodyBytes));   // utf-8 디코딩 -> 한글 깨짐 방지
           _publicReviews = reviews.where((r) => r.isPublic).toList();   // 공개된 감상문만 필터링
+          _myGroups = groups;   // 모임 목록 저장
           _isLoading = false;
         });
       } else {
@@ -194,6 +214,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
           )
         );
       }
+    );
+  }
+
+  // 모임 아이템 빌더
+  Widget _buildGroupItem(GroupResponse group) {
+    return InkWell(
+      onTap: () {
+        // 모임 상세 페이지 이동
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GroupInfoPage(group: group)),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          // side: BorderSide(color: Colors.grey.shade200) // 테두리 선택사항
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // 모임 이미지
+              Container(
+                width: 60, height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                ),
+                child: group.groupImageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(group.groupImageUrl!, fit: BoxFit.cover)
+                    )
+                  : const Icon(Icons.group, color: Colors.grey),
+              ),
+              const SizedBox(width: 12),
+              // 정보 영역
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      group.name, 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      group.description, 
+                      maxLines: 1, 
+                      overflow: TextOverflow.ellipsis, 
+                      style: const TextStyle(color: Colors.grey)
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${group.currentMembers}/${group.maxMembers}", 
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+              // 참여중 표시
+              const Text(
+                "참여중", 
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -336,13 +435,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.only(left: 25, top: 20, bottom: 10),
               child: Text(
-                "모임",
+                "참여 모임",
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ) 
-          )
+          ),
+          // [신규] 내 모임 리스트 출력
+          if (_myGroups.isEmpty)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Center(child: Text("가입한 모임이 없습니다.", style: TextStyle(color: Colors.grey))),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final group = _myGroups[index];
+                  return _buildGroupItem(group);
+                },
+                childCount: _myGroups.length,
+              ),
+            ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 100), 
+          ),
         ],
       ),
     );
