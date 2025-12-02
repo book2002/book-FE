@@ -15,10 +15,12 @@ class AuthService {
 
   final _storage = const FlutterSecureStorage();
 
-  // 'isLoggedIn' 상태를 관찰(Listen)할 수 있는 Notifier false로 시작
-  final ValueNotifier<bool> isLoggedInNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isLoggedInNotifier = ValueNotifier<bool>(false);    // 로그인 여부
+  final ValueNotifier<bool> hasProfileNotifier = ValueNotifier<bool>(false);    // 프로필 생성 여부
+
   // 현재 로그인 상태인지 (외부에서 .value로 접근)
   bool get isLoggedIn => isLoggedInNotifier.value;
+  bool get hasProfile => hasProfileNotifier.value;
 
     // API 호출을 위한 AccessToken 게터 ---
   Future<String?> getAccessToken() async {
@@ -34,10 +36,12 @@ class AuthService {
   Future<void> checkLoginStatus() async {
     final accessToken = await _storage.read(key: 'accessToken');
     final refreshToken = await _storage.read(key: 'refreshToken');
+    final profileStatus = await _storage.read(key: 'hasProfile');
 
     if (refreshToken == null) {
       // refreshToken이 없으면 무조건 로그아웃 상태
       isLoggedInNotifier.value = false;
+      hasProfileNotifier.value = false;
       print("AuthService: refreshToken 없음. 로그아웃 상태.");
       return;
     }
@@ -50,41 +54,47 @@ class AuthService {
         // 3. 401 에러 -> 4단계(refreshToken으로 갱신)로 이동
 
         isLoggedInNotifier.value = true;
-        print("AuthService: accessToken 존재. 우선 로그인 상태로 설정.");
+        hasProfileNotifier.value = (profileStatus == 'true'); 
+        print("AuthService: accessToken 존재. 프로필 여부: ${hasProfileNotifier.value}");
         return;
     }
   }
   
   // 로그인 시 호출 (LoginPage에서 사용)
-  Future<void> login(String accessToken, String refreshToken) async {
+  Future<void> login(String accessToken, String refreshToken, bool isNewUser) async {
     await _storage.write(key: 'accessToken', value: accessToken);
     await _storage.write(key: 'refreshToken', value: refreshToken);
-    // 상태가 true로 변경되었음을 Notifier에 알림
+
+    bool profileExists = !isNewUser; 
+    await _storage.write(key: 'hasProfile', value: profileExists.toString());
+
     isLoggedInNotifier.value = true;
-    print("AuthService: 로그인 성공. 상태 변경 알림.");
+    hasProfileNotifier.value = profileExists;
+    print("AuthService: 로그인 성공. 신규 유저 여부: $isNewUser");
+  }
+
+  // 프로필 생성 완료 시 호출
+  Future<void> completeProfile() async {
+    await _storage.write(key: 'hasProfile', value: 'true');
+    hasProfileNotifier.value = true;
+    print("AuthService: 프로필 생성 완료 처리됨.");
   }
 
   // 로그아웃 시 호출
   Future<void> logout() async {
     await _storage.delete(key: 'accessToken');
     await _storage.delete(key: 'refreshToken');
-    // 상태가 false로 변경되었음을 Notifier에 알림
+    await _storage.delete(key: 'hasProfile');
+    await _storage.delete(key: 'profileId');
+
     isLoggedInNotifier.value = false;
+    hasProfileNotifier.value = false;
     print("AuthService: 로그아웃 성공. 상태 변경 알림.");
   }
 
   Future<void> saveProfileId(int profileId) async {
     await _storage.write(key: 'profileId', value: "$profileId");
     print("profile 아이디 저장 완료. profileId : $profileId");
-  }
-
-  Future<String?> getProfileId() async {
-    try {
-      return await _storage.read(key: 'profileId');
-    } catch (e) {
-      print("AuthService(getProfileId) 오류: $e");
-      return null;
-    }
   }
 
   // JWT 토큰에서 profileId 추출

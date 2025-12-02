@@ -126,9 +126,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   // --- 1단계 제출 (필수 정보 API 전송) ---
   Future<void> _submitStep1() async {
     // 1. 폼 유효성 검사
-    if (!_formKey.currentState!.validate()) {
-      return; // 유효하지 않으면 중단
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     // 2. 로딩 시작
     setState(() { _isLoading = true; });
@@ -137,24 +135,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       // API 호출 전 토큰 읽어오기
       final String? accessToken = await _authService.getAccessToken();
 
-      if (accessToken == null) {
-        // 토큰이 없는 비정상 상황.
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("인증 정보가 만료되었습니다. 다시 로그인해주세요.")),
-        );
-        // 로그인 페이지로 강제 이동 (모든 스택 제거 후 홈으로 이동 -> 홈에서 인증 체크)
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        return;
-      }
+      if (accessToken == null) { /* 토큰 없음 처리 */ return; }
 
       // API 호출
-      // http.post 대신 http.MultipartRequest 사용
       final url = Uri.parse("$baseUrl/api/v1/profile/create");
-      var request = http.MultipartRequest('POST', url);
-      
-      // 헤더에 토큰 추가
-      request.headers['Authorization'] = "Bearer $accessToken";
+      var request = http.MultipartRequest('POST', url);           // http.post 대신 http.MultipartRequest 사용
+      request.headers['Authorization'] = "Bearer $accessToken";   // 헤더에 토큰 추가
 
       // 폼 유효성 검사를 통과했으므로 _dateTime과 _selectedGender는 null이 아님
       // --- 서버 DTO에 맞게 JSON 생성 ---
@@ -181,7 +167,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // [변경] 응답 데이터를 ProfileResponse 객체로 변환 (검증 및 로깅용)
         final jsonResponse = jsonDecode(utf8.decode(response.bodyBytes));
         final profileResponse = ProfileResponse.fromJson(jsonResponse);
 
@@ -216,142 +201,159 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     }
   }
 
+  // 뒤로가기 시 로그아웃 처리
+  Future<bool> _onWillPop() async {
+    await _authService.logout();
+    return true; // 로그인 페이지로 돌아감 (AuthGate에 의해)
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return PopScope( // 뒤로가기 제어
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        await _onWillPop();
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        title: const Text("프로필 설정 (1/2)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.grey.shade300, height: 1.0),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          title: const Text("프로필 설정 (1/2)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          leading: IconButton( // 뒤로가기 버튼 = 로그아웃
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _onWillPop(),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: Colors.grey.shade300, height: 1.0),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUnfocus,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    "환영합니다! \n서비스 이용을 위한 필수 정보를 입력해주세요.",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-
-                // --- 닉네임 ---
-                TextFormField(
-                  controller: _nicknameController,
-                  decoration: const InputDecoration(
-                    labelText: "닉네임",
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor, width: 1.8),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUnfocus,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Text(
+                      "환영합니다! \n서비스 이용을 위한 필수 정보를 입력해주세요.",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "닉네임을 입력해주세요.";
-                    }
-                    if (value.trim().length < 2 || value.trim().length > 20) {
-                      return "닉네임은 2자 이상 20자 이하로 입력해주세요.";
-                    }
-                    // TODO: 닉네임 중복 검사 API 연동
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
+                  
+                  const SizedBox(height: 40),
 
-                // --- 생년월일 (Date Picker) ---
-                TextFormField(
-                  controller: _birthController,
-                  readOnly: true, // 직접 입력을 막고 탭만 가능하게
-                  decoration: const InputDecoration(
-                    labelText: "생년월일",
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor, width: 1.8),
+                  // --- 닉네임 ---
+                  TextFormField(
+                    controller: _nicknameController,
+                    decoration: const InputDecoration(
+                      labelText: "닉네임",
+                      border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: primaryColor, width: 1.8),
+                      ),
                     ),
-                    suffixIcon: Icon(Icons.calendar_month),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "닉네임을 입력해주세요.";
+                      }
+                      if (value.trim().length < 2 || value.trim().length > 20) {
+                        return "닉네임은 2자 이상 20자 이하로 입력해주세요.";
+                      }
+                      // TODO: 닉네임 중복 검사 API 연동
+                      return null;
+                    },
                   ),
-                  onTap: () => _showCupertinoDatePicker(context),   //Cupertino 피커 호출
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "생년월일을 선택해주세요.";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // --- 성별 ---
-                DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  decoration: const InputDecoration(
-                    labelText: "성별",
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor, width: 1.8),
+                  // --- 생년월일 (Date Picker) ---
+                  TextFormField(
+                    controller: _birthController,
+                    readOnly: true, // 직접 입력을 막고 탭만 가능하게
+                    decoration: const InputDecoration(
+                      labelText: "생년월일",
+                      border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: primaryColor, width: 1.8),
+                      ),
+                      suffixIcon: Icon(Icons.calendar_month),
                     ),
+                    onTap: () => _showCupertinoDatePicker(context),   //Cupertino 피커 호출
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "생년월일을 선택해주세요.";
+                      }
+                      return null;
+                    },
                   ),
-                  items: const [
-                    DropdownMenuItem(value: "MALE", child: Text("남성")),
-                    DropdownMenuItem(value: "FEMALE", child: Text("여성")),
-                    DropdownMenuItem(value: "NONE", child: Text("선택 안함")),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedGender = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return "성별을 선택해주세요.";
-                    }
-                    return null;
-                  },
-                ),
-                
-                const SizedBox(height: 24),
-                
-                const SizedBox(height: 40),
+                  const SizedBox(height: 24),
 
-                // --- 다음 버튼 ---
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _submitStep1,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    elevation: 0,
+                  // --- 성별 ---
+                  DropdownButtonFormField<String>(
+                    value: _selectedGender,
+                    decoration: const InputDecoration(
+                      labelText: "성별",
+                      border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: primaryColor, width: 1.8),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: "MALE", child: Text("남성")),
+                      DropdownMenuItem(value: "FEMALE", child: Text("여성")),
+                      DropdownMenuItem(value: "NONE", child: Text("선택 안함")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedGender = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return "성별을 선택해주세요.";
+                      }
+                      return null;
+                    },
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
-                        )
-                      : Text(
-                          "다음",
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
-                        ),
-                ),
-              ],
+                  
+                  const SizedBox(height: 24),
+                  
+                  const SizedBox(height: 40),
+
+                  // --- 다음 버튼 ---
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _submitStep1,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+                          )
+                        : Text(
+                            "다음",
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      )
     );
   }
 }
@@ -360,7 +362,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 class BioSetupPage extends StatefulWidget {
   // 1단계에서 받아올 닉네임 변수 선언
   final String nickname;
-
   const BioSetupPage({super.key, required this.nickname});  // nickname 필수로 받음
 
   @override
@@ -381,12 +382,6 @@ class _BioSetupPageState extends State<BioSetupPage> {
     super.dispose();
   }
 
-  // --- 홈 화면으로 이동 (로그인 스택 모두 제거) ---
-  void _goToHome() {
-    // 로그인 페이지, 1단계, 2단계 페이지를 모두 스택에서 제거하고 홈으로 이동
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
   Future<void> _pickImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -405,30 +400,24 @@ class _BioSetupPageState extends State<BioSetupPage> {
 
   // --- 2단계 제출 (Bio 정보 API 전송) ---
   Future<void> _submitStep2() async {
-    if (_bioController.text.trim().isEmpty && _imageXFile == null) {
-      // Bio, 이미지가 비어있으면 그냥 '완료' (홈으로)
-      _goToHome();
-      return;
-    }
+    // if (_bioController.text.trim().isEmpty && _imageXFile == null) {
+    //   // Bio, 이미지가 비어있으면 그냥 '완료' (홈으로)
+    //   return;
+    // }
 
     setState(() { _isLoading = true; });
 
     try {
       // API 호출
       final String? accessToken = await _authService.getAccessToken();
-      if (accessToken == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("인증 정보가 만료되었습니다.")),
-        );
-        _goToHome(); // 에러가 나도 일단 홈으로 보냄
-        return;
-      }
+      if (accessToken == null) return;
 
       final url = Uri.parse(profileEditApiUrl);
       var request = http.MultipartRequest('PUT', url);
 
       request.headers['Authorization'] = "Bearer $accessToken";
+
+      print(widget.nickname);
 
       Map<String, String?> dtoMap = {
         "bio": _bioController.text,
@@ -446,20 +435,14 @@ class _BioSetupPageState extends State<BioSetupPage> {
       // 이미지가 있으면 'image' 파트로 추가
       if (_imageXFile != null) {
         final bytes = await _imageXFile!.readAsBytes();   // 파일의 바이트 데이터
-
-        // 확장자 추출 (예: image.png -> png)
         String extension = _imageXFile!.path.split('.').last.toLowerCase();
-
-        // 기본값은 jpeg
-        String subtype = 'jpeg';
-        if (extension == 'png') subtype = 'png';
 
         request.files.add(
           await http.MultipartFile.fromBytes(
             'image', // 백엔드 @RequestPart("image")
             bytes,
             filename: _imageXFile!.name,
-            contentType: MediaType('image', subtype), // (파일 형식에 맞게 조절)
+            contentType: MediaType('image', extension == 'png' ? 'png' : 'jpeg'), // (파일 형식에 맞게 조절)
           ),
         );
       }
@@ -471,9 +454,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("자기소개가 저장되었습니다! 환영합니다.")),
-        );
+        await _authService.completeProfile();   // 프로필 생성 완료 -> 메인 화면으로 전환
       } else {
         final errorBody = jsonDecode(response.body);
         final errorMessage = errorBody["message"] ?? "업데이트에 실패했습니다.";
@@ -488,11 +469,17 @@ class _BioSetupPageState extends State<BioSetupPage> {
         SnackBar(content: Text("오류 발생: $e")),
       );
     } finally {
-      // API 성공/실패 여부와 관계없이 홈으로 이동
-      setState(() { _isLoading = false; });
-      _goToHome();
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
+
+  // 건너뛰기 동작 (내용 없이 완료 처리)
+  void _skipStep2() async {
+    _bioController.clear();
+    setState(() => _imageXFile = null);
+    await _submitStep2(); 
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -510,7 +497,7 @@ class _BioSetupPageState extends State<BioSetupPage> {
         actions: [
           // --- 건너뛰기 버튼 ---
           TextButton(
-            onPressed: _goToHome, // 누르면 바로 홈으로
+            onPressed: _skipStep2, // 누르면 바로 홈으로
             child: const Text(
               "건너뛰기",
               style: TextStyle(color: Colors.grey, fontSize: 16),

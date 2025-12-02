@@ -163,6 +163,44 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     }
   }
 
+  // 모임 삭제 로직
+  void _handleDeleteGroup() async {
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("모임 삭제"),
+        content: const Text("정말로 모임을 삭제하시겠습니까?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("삭제하기", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      bool success = await _groupService.deleteGroup(widget.group.groupId);
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("모임을 삭제했습니다.")),
+        );
+        // true를 반환하여 이전 화면(목록)에서 갱신하도록 함
+        Navigator.pop(context, true);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("삭제에 실패했습니다. 다시 시도해주세요.")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,7 +234,13 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               ],
             ),
           ),
-          IconButton(
+          widget.group.isOwner
+          ? IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey), // 나가는 문 아이콘
+            tooltip: "모임 삭제하기",
+            onPressed: _handleDeleteGroup,
+          )
+          : IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.grey), // 나가는 문 아이콘
             tooltip: "모임 나가기",
             onPressed: _handleLeaveGroup,
@@ -350,7 +394,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             builder: (context) => GroupPostDetailPage(
               postId: post.postId,
               previewPost: post,
-              // isLeader: ,
+              canModify: post.canModify,
             ),
           ),
         );
@@ -422,7 +466,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             builder: (context) => DiscussionDetailPage(
               discussionId: discussion.discussionId,
               previewDiscussion: discussion,
-              isLeader: false, // 필요 시 로직 추가
+              canModify: discussion.canModify,
             ),
           ),
         );

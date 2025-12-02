@@ -10,6 +10,7 @@ class GroupResponse {
   final int currentMembers;
   final String? groupImageUrl;
   final bool isJoined;
+  final bool isOwner;
 
   GroupResponse({
     required this.groupId,
@@ -21,6 +22,7 @@ class GroupResponse {
     required this.currentMembers,
     this.groupImageUrl,
     required this.isJoined,
+    required this.isOwner,
   });
 
   factory GroupResponse.fromJson(Map<String, dynamic> json) {
@@ -33,7 +35,8 @@ class GroupResponse {
       maxMembers: json['maxMembers'] ?? 0,
       currentMembers: json['currentMembers'] ?? 0,
       groupImageUrl: json['groupImageUrl'],
-      isJoined: json['joined'] ?? false,
+      isJoined: json['isJoined'] ?? false,
+      isOwner: json['isOwner'] ?? false,
     );
   }
 }

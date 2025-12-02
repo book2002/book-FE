@@ -7,13 +7,13 @@ import 'package:flutter_app/service/auth_service.dart';
 class DiscussionDetailPage extends StatefulWidget {
   final int discussionId;
   final DiscussionResponse? previewDiscussion;
-  final bool isLeader; // 모임장 여부
+  final bool canModify; // 모임장 여부
 
   const DiscussionDetailPage({
     Key? key,
     required this.discussionId,
     this.previewDiscussion,
-    this.isLeader = false,
+    required this.canModify,
   }) : super(key: key);
 
   @override
@@ -225,10 +225,7 @@ class _DiscussionDetailPageState extends State<DiscussionDetailPage> {
 
     final discussion = _discussion!;
     // 권한 판단 (임시 로직: 작성자이거나 모임장이면 관리 가능)
-    bool isAuthor = _myNickname != null && discussion.authorNickname == _myNickname;
-    bool canManage = isAuthor || widget.isLeader;
-    // 임시로 권한 열어둠
-    canManage = true; 
+    bool canManage = widget.canModify;
 
     return PopScope(
       canPop: false,

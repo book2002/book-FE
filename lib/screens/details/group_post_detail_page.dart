@@ -7,13 +7,13 @@ import 'package:flutter_app/service/group_post_service.dart'; // PostModel 사�
 class GroupPostDetailPage extends StatefulWidget {
   final int postId;
   final GroupPostResponse? previewPost;
-  final bool isLeader;    // 상위 페이지에서 모임장 여부 받아옴
+  final bool canModify;    // 상위 페이지에서 모임장 여부 받아옴
 
   const GroupPostDetailPage({
     Key? key, 
     required this.postId,
     this.previewPost,
-    this.isLeader = false,  // 기본값, 넘겨주는 값으로 권한 판단
+    this.canModify = false,  // 기본값, 넘겨주는 값으로 권한 판단
   }) : super(key: key);
 
   @override
@@ -278,11 +278,8 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
 
     // 데이터가 있는 경우 (로딩 완료 or 미리보기)
     final post = _post!;
-    // 1. 작성자 여부: 내 닉네임과 게시글 작성자 닉네임 일치 여부 (닉네임이 로드되지 않았으면 false)
-    // bool isAuthor = _myNickname != null && post.authorNickname == _myNickname;
-    // 2. 관리 권한: 작성자이거나 모임장인 경우
-    // bool canManage = isAuthor || widget.isLeader;
-    bool canManage = true;
+    // 관리 권한: 작성자이거나 모임장인 경우
+    bool canManage = widget.canModify;
 
     return PopScope(
       canPop: false,    // 뒤로가기 동작 수동 제어
@@ -325,16 +322,16 @@ class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
                   ];
                 } 
                 // 작성자가 아닌 경우: 신고
-                // else {
-                //   return [
-                //     const PopupMenuItem(
-                //       value: 'report',
-                //       child: Row(
-                //         children: [Icon(Icons.report_problem, size: 20, color: Colors.red), SizedBox(width: 8), Text("신고", style: TextStyle(color: Colors.red))],
-                //       ),
-                //     ),
-                //   ];
-                // }
+                else {
+                  return [
+                    const PopupMenuItem(
+                      value: 'report',
+                      child: Row(
+                        children: [Icon(Icons.report_problem, size: 20, color: Colors.red), SizedBox(width: 8), Text("신고", style: TextStyle(color: Colors.red))],
+                      ),
+                    ),
+                  ];
+                }
               },
             ),
           ],
