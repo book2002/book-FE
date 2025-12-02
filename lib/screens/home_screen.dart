@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/service/refresh_service.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -40,6 +41,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchHomeData();
     _fetchRecommendations(_selectedCategory);
+
+    RefreshService().bookShelfNotifier.addListener(_onShelfUpdated);
+  }
+
+  void _onShelfUpdated() {
+    print("홈 화면: 책장 변경 감지 -> 데이터 갱신");
+    _fetchHomeData();
   }
 
   // 홈 화면에 필요한 데이터(내 책장, 추천, 신간)를 병렬로 가져오는 함수
@@ -122,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    RefreshService().bookShelfNotifier.removeListener(_onShelfUpdated);
     _searchController.dispose();
     super.dispose();
   }

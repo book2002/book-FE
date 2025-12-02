@@ -3,6 +3,7 @@ import 'package:flutter_app/models/book_model.dart';
 import 'package:flutter_app/models/record_model.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/record_service.dart';
+import 'package:flutter_app/service/refresh_service.dart';
 
 class BookDetailPage extends StatefulWidget {
   final String isbn;  // api 요청에 필수적
@@ -32,6 +33,7 @@ class BookDetailPage extends StatefulWidget {
 class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProviderStateMixin {
   final BookService _bookService = BookService();
   final RecordService _recordService = RecordService();
+  final RefreshService _refreshService = RefreshService();
 
   late TabController _tabController; // 탭 컨트롤러
 
@@ -146,6 +148,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
       bool success = await _recordService.deleteReview(reviewId);
       if (success) {
         _fetchRecords();
+        _refreshService.notifyReviewChanged();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("감상문이 삭제되었습니다.")));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("삭제 실패")));
@@ -301,20 +304,6 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
                         return;
                       }
 
-                      // 로딩 시작 (UI 갱신을 위해 setState가 아닌 setModalState는 필요 없지만, 부모 위젯 리빌드 고려)
-                      // 여기서는 단순히 비동기 로직 실행
-                      
-                      // final request = BookSaveRequest(
-                      //   isbn: widget.isbn,
-                      //   title: widget.title,
-                      //   authors: [widget.author], // 작가가 String으로 오므로 리스트로 변환
-                      //   thumbnail: widget.thumbnail,
-                      //   state: selectedState,
-                      //   currentPage: current ?? 0,
-                      //   totalPage: total,
-                      // );
-
-                      // 모달 닫기 (UX상 로딩을 보여주거나 닫고나서 처리할 수 있음. 여기선 닫고 처리)
                       Navigator.pop(context);
 
                       if (isEdit && _myShelfItem != null) {
@@ -336,6 +325,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
                           totalPage: total,
                         ));
                       }
+                      _refreshService.notifyBookShelfChanged();
 
                     },
                     style: ElevatedButton.styleFrom(
@@ -416,6 +406,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
           _isInShelf = true; // 아이콘 변경
           _myShelfItem = savedItem; // itemId 저장
         });
+        _refreshService.notifyBookShelfChanged();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("책장에 추가되었습니다!")));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -440,12 +431,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
       
       if (!mounted) return;
       if (success) {
-        // 성공 시 로컬 상태도 갱신 (단순화를 위해 다시 fetch하거나 값을 수동 업데이트)
-        // 여기선 수동 업데이트
         setState(() {
-           // _myShelfItem 객체 내용 갱신이 필요하다면 여기서 수행
-           // 단순 아이콘 유지를 위해서는 별도 작업 불필요하나,
-           // 모달 다시 열었을 때 반영되도록 값 갱신
            _myShelfItem = BookShelfItemDto(
              itemId: _myShelfItem!.itemId,
              isbn: _myShelfItem!.isbn,
@@ -457,6 +443,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
              totalPage: request.totalPage,
            );
         });
+        _refreshService.notifyBookShelfChanged();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("수정되었습니다.")));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("수정 실패")));
@@ -477,6 +464,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
           _isInShelf = false;
           _myShelfItem = null;
         });
+        _refreshService.notifyBookShelfChanged();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("삭제되었습니다.")));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("삭제 실패")));
@@ -610,6 +598,7 @@ class _BookDetailPageState extends State<BookDetailPage> with SingleTickerProvid
 
                         if (success) {
                           _fetchRecords(); // 목록 갱신
+                          _refreshService.notifyReviewChanged();   // 프로필 감상평 갱신
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("감상문이 저장되었습니다.")));
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("저장 실패")));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/book_model.dart';
 import 'package:flutter_app/service/book_service.dart';
+import 'package:flutter_app/service/refresh_service.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
 
 class BooklistScreen extends StatefulWidget {
@@ -25,6 +26,20 @@ class _BooklistScreenState extends State<BooklistScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchShelfBooks();
+
+    RefreshService().bookShelfNotifier.addListener(_onShelfUpdated);
+  }
+
+  @override
+  void dispose() {
+    // [신규] 해제
+    RefreshService().bookShelfNotifier.removeListener(_onShelfUpdated);
+    super.dispose();
+  }
+
+  void _onShelfUpdated() {
+    print("책장 화면: 변경 감지 -> 갱신");
     _fetchShelfBooks();
   }
 
