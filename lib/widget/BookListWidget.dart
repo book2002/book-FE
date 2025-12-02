@@ -16,6 +16,38 @@ class BookListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (books.isEmpty) {
+      String message = "책이 없습니다.";
+      if (tabType == 'reading') {
+        message = "읽고 있는 책이 없습니다.\n새로운 책을 읽어보세요!";
+      } else if (tabType == 'before') {
+        message = "읽고 싶은 책이 없습니다.\n관심 가는 책을 담아보세요!";
+      } else if (tabType == 'done') {
+        message = "다 읽은 책이 없습니다.\n독서 기록을 남겨보세요!";
+      }
+
+      return SizedBox(
+        height: MediaQuery.of(context).size.height * 0.65, // 화면 높이의 60% 정도 확보
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.menu_book, size: 60, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        )
+      );
+    }
+
     return ListView.builder(
       shrinkWrap: true, // 내부 높이를 자동으로 계산
       physics: const NeverScrollableScrollPhysics(), // 외부 스크롤과 충돌 방지
