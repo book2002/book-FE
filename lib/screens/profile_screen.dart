@@ -33,17 +33,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _hasError = false;
 
+  // 스크롤 감지 컨트롤러 및 상태 변수
+  late ScrollController _scrollController;
+  bool _isCollapsed = false;
+
   @override
   void initState() {
     super.initState();
     _fetchProfileAndReviews();
     RefreshService().reviewNotifier.addListener(_onReviewUpdated);
+
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     RefreshService().reviewNotifier.removeListener(_onReviewUpdated);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // 스크롤 위치에 따라 앱바 상태 감지
+  void _onScroll() {
+    // expandedHeight(220) - collapsedHeight(60) = 160
+    // 스크롤이 160 이상 되면 앱바가 접힌 상태로 간주
+    if (_scrollController.hasClients && _scrollController.offset > (220 - 60)) {
+      if (!_isCollapsed) {
+        setState(() => _isCollapsed = true);
+      }
+    } else {
+      if (_isCollapsed) {
+        setState(() => _isCollapsed = false);
+      }
+    }
   }
 
   void _onReviewUpdated() {
@@ -318,17 +341,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final int followingCount = _profileData?['followingCount'] ?? 0;
 
     return Scaffold(
-      //backgroundColor: const Color.fromARGB(255, 248, 246, 243),
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // 상단 프로필 SliverAppBar
           SliverAppBar(
             backgroundColor: Colors.grey[300],
             pinned: true,
             expandedHeight: 220, // 확장 높이
-            collapsedHeight: 80, // 축소 높이
+            collapsedHeight: 60, // 축소 높이
+            title: _isCollapsed   // 접혔을 때만 닉네임 표시
+                ? Text(nickname, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold))
+                : null,
             flexibleSpace: FlexibleSpaceBar(
-              background: Padding(
+              background: Container(
+                color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -385,7 +412,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 15, top: 15),
+                padding: const EdgeInsets.only(right: 15, top: 10, bottom: 10),
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Color.fromARGB(30, 0, 0, 0),
