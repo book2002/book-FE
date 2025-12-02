@@ -65,6 +65,33 @@ class RecordService {
       return [];
     }
   }
+
+  Future<List<ReviewResponse>> getReviewsByProfileId() async {
+    final url = Uri.parse('$baseUrl/api/v1/reviews/my');
+    try {
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(url, headers: headers);
+      print("getReviews : ${response.body}");
+
+      if (response.statusCode == 200) {
+        final dynamic body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is List) {
+          return body.map((json) => ReviewResponse.fromJson(json)).toList();
+        } else {
+          return [ReviewResponse.fromJson(body)];
+        }
+      }
+      return [];
+    } catch (e) {
+      print("사용자 감상문 조회 오류: $e");
+      return [];
+    }
+  }
   
   // 감상문 수정 (PATCH /api/v1/reviews/{reviewId})
   Future<bool> updateReview(int reviewId, ReviewUpdateRequest request) async {

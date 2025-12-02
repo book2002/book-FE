@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/models/record_model.dart';
+import 'package:flutter_app/service/book_service.dart';
+import 'package:flutter_app/service/record_service.dart';
 import 'package:flutter_app/testdata/book_dummy.dart';
 import 'package:flutter_app/service/auth_service.dart'; // AuthService
 import 'package:flutter_app/constants.dart'; // URL 상수
@@ -14,26 +18,29 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
+  final RecordService _recordService = RecordService();
+  final BookService _bookService = BookService();
 
   // 프로필 데이터를 저장할 변수
   Map<String, dynamic>? _profileData;
+  List<ReviewResponse> _publicReviews = [];   // 공개 감상문 리스트
   bool _isLoading = true;
   bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchProfileData();
+    _fetchProfileAndReviews();
   }
 
   // 프로필 데이터 가져오는 함수
-  Future<void> _fetchProfileData() async {
+  Future<void> _fetchProfileAndReviews() async {
     try {
       // accessToken으로 연결된 회원 정보 파악
       final accessToken = await _authService.getAccessToken();
-      final profileId = await _authService.getProfileIdFromToken();
+      final profileIdStr = await _authService.getProfileIdFromToken();
 
-      if (accessToken == null || profileId == null) {
+      if (accessToken == null || profileIdStr == null) {
         print("토큰이 없거나 ID를 추출할 수 없습니다.");
         setState(() {
           _isLoading = false;
@@ -41,6 +48,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
         return;
       }
+
+      int profileId = int.parse(profileIdStr);
 
       final url = Uri.parse('$baseUrl/api/v1/profile/$profileId');
       print("요청 URL: $url"); 
@@ -53,9 +62,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       );
 
+      final reviews = await _recordService.getReviewsByProfileId();
+
       if (response.statusCode == 200) {
         setState(() {
           _profileData = jsonDecode(utf8.decode(response.bodyBytes));   // utf-8 디코딩 -> 한글 깨짐 방지
+          _publicReviews = reviews.where((r) => r.isPublic).toList();   // 공개된 감상문만 필터링
           _isLoading = false;
         });
       } else {
@@ -74,78 +86,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // 책 정보를 가져오기 위한 Helper (이미지, 저자 등)
+  Future<BookDto?> _fetchBookInfo(String title) async {
+    try {
+      final results = await _bookService.getSearchBooks(title);
+      if (results.isNotEmpty) {
+        return results.first;
+      }
+    } catch (e) {
+      print("책 정보 검색 실패: $e");
+    }
+    return null;
+  }
+
   // 감상평 카드 위젯 빌더
-  Widget _buildReviewCard(Map<String, dynamic> book) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,  //세로축 기준 중앙정렬
-            children: [
-              // 책 이미지
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(8),
-                  ),
-                  child: Image.network(
-                    book['thumbnail'],
-                    width: 100,
-                    //height: 120,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              
-              // 책 정보
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book['title'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        book['author'],
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text('★ 3.5'),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildReviewCard(ReviewResponse review) {
+    return FutureBuilder<BookDto?>(
+      future: _fetchBookInfo(review.bookTitle), // 책 제목으로 정보 검색
+      builder: (context, snapshot) {
+        final bookInfo = snapshot.data;
+        final String thumbnail = bookInfo?.thumbnail ?? "https://via.placeholder.com/100x150";
+        final String author = bookInfo?.authorsString ?? "저자 미상";
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          color: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          Padding(
-            padding: EdgeInsetsGeometry.all(12),
-            child: const Text(
-              "난 진정, 내 안에서 솟아 나오려는 것. 그것을 살아 보려 했다. 왜 그것이 그토록 어려웠을까. 처음 데미안을 읽었던 때와 지금 다른 게 있다면 고등학교 때는 깨고자 하는 알이 없었다는 점이다. 사실 지금도 내가 깨고자 하는 세계가 확실하지는 않다. 나 스스로에 대해 알아가는 시간이 더 많이 필요하다는 반증이다. 그렇지만 어렴풋이 내가 나아가고자 하는 길이 생겼고, 그 길을 위해 노력하고 있다는 점에서 나는 아브락사스에 도달하고 있는 과정 중에 있지 않을까 하는 생각을 해 본다.[출처] 📚헤르만 헤세 '데미안' 줄거리와 느낀 점 : 내 안의 자아를 찾아라.|작성자 윤콩o0",
-              style: TextStyle(
-                
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,  //세로축 기준 중앙정렬
+                children: [
+                  // 책 이미지
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(8),
+                      ),
+                      child: Image.network(
+                        thumbnail,
+                        width: 80,
+                        height: 110,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(width: 80, height: 110, color: Colors.grey[200], child: const Icon(Icons.book, color: Colors.grey)),
+                      ),
+                    ),
+                  ),
+                  
+                  // 책 정보
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            review.bookTitle,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            author,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.star, size: 14, color: Colors.amber),
+                              const SizedBox(width: 4),
+                              Text('${review.rating}', style: const TextStyle(fontSize: 13)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 4,
-              overflow: TextOverflow.fade,
-            ),
+              // 리뷰 내용
+              Padding(
+                padding: EdgeInsetsGeometry.all(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    review.content,
+                    style: const TextStyle(height: 1.5, fontSize: 14),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+            ],
           )
-        ],
-      )
+        );
+      }
     );
   }
 
@@ -171,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final int followingCount = _profileData?['followingCount'] ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 248, 246, 243),
+      //backgroundColor: const Color.fromARGB(255, 248, 246, 243),
       body: CustomScrollView(
         slivers: [
           // 상단 프로필 SliverAppBar
@@ -253,30 +301,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
 
-          // 본문: 독서 현황 제목
-          // TODO: 공개 설정한 감상문만 보이도록 설정해야함
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(left: 25, top: 20, bottom: 10),
               child: Text(
                 '작성한 감상문',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
 
           // 🔹 책 리스트
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final book = dummyBooks[index];
-                // return _buildReviewCard(book);
-              },
-              childCount: dummyBooks.length,
+          if (_publicReviews.isEmpty)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Center(child: Text("작성된 공개 감상문이 없습니다.", style: TextStyle(color: Colors.grey))),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final review = _publicReviews[index];
+                  return _buildReviewCard(review);
+                },
+                childCount: _publicReviews.length,
+              ),
             ),
-          ),
 
           SliverToBoxAdapter(
             child: Padding(
