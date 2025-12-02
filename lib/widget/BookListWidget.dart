@@ -97,9 +97,12 @@ class BookListWidget extends StatelessWidget {
                       height: 120,
                       fit: BoxFit.cover,
                       // 이미지 로드 에러 처리
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        width: 80, height: 120, color: Colors.grey[300], child: const Icon(Icons.broken_image),
-                      ),
+                      errorBuilder: (context, error, stackTrace) {
+                        print(error);
+                        return Container(
+                          width: 80, height: 120, color: Colors.grey[300], child: const Icon(Icons.broken_image),
+                        );
+                      }
                     ),
                   ),
                   const SizedBox(width: 12),
