@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/screens/details/loan_creat_page.dart';
+import 'package:flutter_app/screens/details/loan_create_page.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/loan_service.dart';
 
