@@ -3,6 +3,8 @@ import 'package:flutter_app/models/book_model.dart';
 import 'package:flutter_app/models/group_model.dart';
 import 'package:flutter_app/models/record_model.dart';
 import 'package:flutter_app/screens/details/group_info_page.dart';
+import 'package:flutter_app/screens/profile/password_change_page.dart';
+import 'package:flutter_app/screens/profile/profile_edit_page.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/group_service.dart';
 import 'package:flutter_app/service/record_service.dart';
@@ -140,6 +142,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print("책 정보 검색 실패: $e");
     }
     return null;
+  }
+
+  // 프로필 수정 페이지 이동
+  void _goToProfileEdit() async {
+    if (_profileData == null) return;
+    final bool? updated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileEditPage(
+          currentNickname: _profileData!['nickname'],
+          currentBio: _profileData!['bio'] ?? '',
+          currentImageUrl: _profileData!['profileImageUrl'],
+        ),
+      ),
+    );
+
+    if (updated == true) {
+      _fetchProfileAndReviews(); // 갱신
+    }
+  }
+
+  // 비밀번호 변경 페이지 이동
+  void _goToPasswordChange() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PasswordChangePage()),
+    );
+  }
+
+  // 로그아웃
+  void _logout() async {
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("로그아웃"),
+        content: const Text("정말 로그아웃 하시겠습니까?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("취소")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("로그아웃", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _authService.logout();
+      // AuthGate에 의해 로그인 화면으로 자동 전환됨
+    }
+  }
+
+  // 계정 탈퇴/비활성화 처리
+  void _manageAccount(String type) async {
+    bool isDelete = type == 'delete';
+    String title = isDelete ? "회원 탈퇴" : "계정 비활성화";
+    String content = isDelete 
+        ? "정말로 탈퇴하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다."
+        : "계정을 비활성화하시겠습니까? 언제든 다시 로그인하여 활성화할 수 있습니다.";
+
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("취소")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: Text(isDelete ? "탈퇴" : "비활성화", style: const TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      bool success = isDelete 
+          ? await _authService.deleteAccount()
+          : await _authService.inactivateAccount();
+      
+      if (!success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$title 실패")));
+      }
+      // 성공 시 logout()이 호출되어 자동으로 로그인 화면으로 이동됨
+    }
   }
 
   // 감상평 카드 위젯 빌더
@@ -418,9 +503,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: Color.fromARGB(30, 0, 0, 0),
                     shape: BoxShape.circle,
                   ),
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.more_vert, size: 18,),
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    onSelected: (String value) {
+                      // 선택된 값에 따라 분기 처리
+                      switch (value) {
+                        case 'edit_profile':
+                          _goToProfileEdit();
+                          break;
+                        case 'change_password':
+                          _goToPasswordChange();
+                          break;
+                        case 'logout':
+                          _logout();
+                          break;
+                        case 'inactivate_account':
+                          _manageAccount('inactivate');
+                          break;
+                        case 'delete_account':
+                          _manageAccount('delete');
+                          break;
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit_profile',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('프로필 수정'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(), // 구분선
+                      const PopupMenuItem<String>(
+                        value: 'change_password',
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_outline, size: 20),
+                            SizedBox(width: 8),
+                            Text('비밀번호 변경'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, size: 20),
+                            SizedBox(width: 8),
+                            Text('로그아웃'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                      value: 'inactivate_account',
+                      child: Row(
+                        children: [
+                          Icon(Icons.pause_circle_outline, size: 20), 
+                          SizedBox(width: 8), Text('계정 비활성화')
+                        ]
+                      ),
+                    ),
+                      const PopupMenuItem<String>(
+                        value: 'delete_account',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_forever, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('회원 탈퇴', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ]
                   ),
                 ),
               ),
