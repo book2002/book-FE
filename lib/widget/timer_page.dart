@@ -77,22 +77,22 @@ class _TimerPageState extends State<TimerPage> {
           children: [
             Container(
               padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  )
-                ],
-                border: Border.all(color: primaryColor.withOpacity(0.5), width: 2)
-              ),
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   color: Colors.white,
+              //   boxShadow: [
+              //     BoxShadow(
+              //       color: Colors.grey.withOpacity(0.2),
+              //       blurRadius: 20,
+              //       spreadRadius: 5,
+              //     )
+              //   ],
+              //   border: Border.all(color: primaryColor.withOpacity(0.5), width: 2)
+              // ),
               child: Text(
                 _formatTime(),
                 style: TextStyle(
-                  fontSize: 50,
+                  fontSize: 45,
                   fontWeight: FontWeight.bold,
                   fontFeatures: [const FontFeature.tabularFigures()],
                   color: _isRunning ? Colors.black : Colors.grey,

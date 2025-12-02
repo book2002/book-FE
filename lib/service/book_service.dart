@@ -69,6 +69,36 @@ class BookService {
     }
   }
 
+  // 도서 추천 API
+  // GET /api/v1/recommendations?category={category}
+  Future<List<BookDto>> getRecommendations(String category) async {
+    final url = Uri.parse('$baseUrl/api/v1/recommendations')
+        .replace(queryParameters: {'category': category});
+
+    try {
+      final token = await _authService.getAccessToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(url, headers: headers);
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        // BookDto 변환
+        return (body).map((json) => BookDto.fromJson(json)).toList();
+      } else {
+        print('추천 도서 조회 실패: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('추천 도서 API 에러: $e');
+      return [];
+    }
+  }
+
   // 신간 도서 조회
   Future<List<BookDto>> getNewReleases() async {
     final url = Uri.parse('$baseUrl/api/v1/books/new-releases');

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/screens/details/loan_creat_page.dart';
+import 'package:flutter_app/screens/details/loan_create_page.dart';
 import 'package:flutter_app/service/book_service.dart';
 import 'package:flutter_app/service/loan_service.dart';
 
@@ -53,39 +53,6 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
       });
     }
   }
-
-  // [신규 추가] 더미 데이터 리스트
-  final List<LoanRecordModel> _dummyLoans = [
-    LoanRecordModel(
-      title: "클린 코드",
-      libraryName: "부경대학교 중앙도서관",
-      loanDate: "2025.10.07",
-      returnDate: "2025.11.24",
-      coverColor: Colors.teal,
-    ),
-    LoanRecordModel(
-      title: "지적 대화를 위한 넓고 얕은 지식 1",
-      libraryName: "부경대학교 중앙도서관",
-      loanDate: "2025.10.07",
-      returnDate: "2025.11.24",
-      coverColor: Colors.blueAccent,
-    ),
-    LoanRecordModel(
-      title: "불편한 편의점",
-      libraryName: "서초구립반포도서관",
-      loanDate: "2025.10.25",
-      returnDate: "2025.11.28",
-      coverColor: Colors.orangeAccent,
-    ),
-    LoanRecordModel(
-      title: "총 균 쇠",
-      libraryName: "국립중앙도서관",
-      loanDate: "2025.11.01",
-      returnDate: "2025.11.30",
-      coverColor: Colors.brown,
-    ),
-    
-  ];
 
   // 책 제목으로 이미지 URL을 가져오는 함수 (메모이제이션 고려 가능하나 여기선 단순 호출)
   Future<String?> _fetchBookImage(String title) async {
@@ -245,17 +212,21 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                 children: [
                   // 책 제목 (공간 차지)
                   Expanded(
-                    child: Text(
-                      loan.bookTitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: loan.returned ? Colors.grey : Colors.black87,
-                        decoration: loan.returned ? TextDecoration.lineThrough : null,
+                    child: Padding(
+                      padding: EdgeInsetsGeometry.only(top: 10),
+                      child: Text(
+                        loan.bookTitle,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: loan.returned ? Colors.grey : Colors.black87,
+                          decoration: loan.returned ? TextDecoration.lineThrough : null,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    )
+                    
                   ),
                   // 수정/삭제 메뉴
                   PopupMenuButton<String>(
@@ -297,6 +268,13 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                   const Text("반납 ", style: TextStyle(fontSize: 12, color: Colors.grey)),
                   Text(loan.dueDate, style: const TextStyle(fontSize: 12, color: Colors.redAccent)), // 반납일 강조
                   const SizedBox(width: 10),
+                  
+                ],
+              ),
+              const SizedBox(height: 5,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
                   if (loan.returned)
                     const Text("[반납완료]", style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold))
                   else
@@ -307,9 +285,10 @@ class _LoanInfoPageState extends State<LoanInfoPage> {
                         decoration: BoxDecoration(border: Border.all(color: Colors.green), borderRadius: BorderRadius.circular(12)),
                         child: const Text("반납하기", style: TextStyle(fontSize: 10, color: Colors.green)),
                       ),
-                    )
+                    ),
+                  const SizedBox(width: 15,),
                 ],
-              ),
+              )
             ],
           ),
         ),
