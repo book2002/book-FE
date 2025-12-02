@@ -23,9 +23,10 @@ class GroupPostResponse {
   final String content;
   final String createdAt;
   final int commentCount;
+  final bool isMyPost;
+  final bool canModify;
 
   final String category;    // ui에서 필터링을 위해 사용
-  final bool isAuthor;      // 본인 작성 글 여부 확인용
 
   GroupPostResponse({
     required this.postId,
@@ -35,8 +36,9 @@ class GroupPostResponse {
     required this.content,
     required this.createdAt,
     required this.commentCount,
+    required this.isMyPost,
+    required this.canModify,
     this.category = '일반', // 기본값 설정
-    this.isAuthor = false,  // 기본값 설정
   });
 
   factory GroupPostResponse.fromJson(Map<String, dynamic> json) {
@@ -48,9 +50,10 @@ class GroupPostResponse {
       content: json['content'] ?? '',
       createdAt: json['createdAt'] ?? '',
       commentCount: json['commentCount'] ?? 0,
+      isMyPost: json['isMyPost'] ?? false,
+      canModify: json['canModify'] ?? false,
 
       category: json['category'] ?? '일반', 
-      isAuthor: json['isAuthor'] ?? json['myPost'] ?? true,  // AuthService의 내 ID와 authorNickname/Id를 비교하는 로직 필요
     );
   }
 
@@ -98,6 +101,7 @@ class GroupCommentResponse {
   final String content;
   final String createdAt;
   final bool isMyComment; // 수정/삭제 버튼 표시 여부 결정
+  final bool canModify; // 수정/삭제 버튼 표시 여부 결정
 
   GroupCommentResponse({
     required this.commentId,
@@ -106,6 +110,7 @@ class GroupCommentResponse {
     required this.content,
     required this.createdAt,
     required this.isMyComment,
+    required this.canModify,
   });
 
   factory GroupCommentResponse.fromJson(Map<String, dynamic> json) {
@@ -115,7 +120,8 @@ class GroupCommentResponse {
       authorNickname: json['authorNickname'] ?? '',
       content: json['content'] ?? '',
       createdAt: json['createdAt'] ?? '',
-      isMyComment: json['myComment'] ?? false, // 백엔드 필드명 확인 필요 (isMyComment vs myComment)
+      isMyComment: json['isMyComment'] ?? false,
+      canModify: json['canModify'] ?? false,
     );
   }
 

@@ -8,6 +8,8 @@ class DiscussionResponse {
   final String createdAt;
   final int commentCount;
   final bool isClosed; // 토론 마감 여부
+  final bool isMyDiscussion;
+  final bool canModify;
 
   // UI 로직용
   final String category = '토론'; 
@@ -21,6 +23,8 @@ class DiscussionResponse {
     required this.createdAt,
     required this.commentCount,
     required this.isClosed,
+    required this.isMyDiscussion,
+    required this.canModify,
   });
 
   factory DiscussionResponse.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,8 @@ class DiscussionResponse {
       createdAt: json['createdAt'] ?? '',
       commentCount: json['commentCount'] ?? 0,
       isClosed: json['closed'] ?? false,
+      isMyDiscussion: json['isMyDiscussion'] ?? false,
+      canModify: json['canModify'] ?? false,
     );
   }
 
@@ -90,6 +96,7 @@ class DiscussionCommentResponse {
   final String content;
   final String createdAt;
   final bool isMyComment;
+  final bool canModify;
 
   DiscussionCommentResponse({
     required this.commentId,
@@ -98,6 +105,7 @@ class DiscussionCommentResponse {
     required this.content,
     required this.createdAt,
     required this.isMyComment,
+    required this.canModify,
   });
 
   factory DiscussionCommentResponse.fromJson(Map<String, dynamic> json) {
@@ -107,7 +115,8 @@ class DiscussionCommentResponse {
       authorNickname: json['authorNickname'] ?? '익명',
       content: json['content'] ?? '',
       createdAt: json['createdAt'] ?? '',
-      isMyComment: json['myComment'] ?? false,
+      isMyComment: json['isMyComment'] ?? false,
+      canModify: json['canModify'] ?? false,
     );
   }
 
