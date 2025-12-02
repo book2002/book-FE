@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/login_page.dart';   //login_page import
+import 'package:flutter_app/profile_setting_page.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
@@ -85,7 +86,64 @@ class MyApp extends StatelessWidget {
         Locale('en', 'US'), // ( fallback )
       ],
 
-      home: const MyHomePage(title: ''),
+      // home을 AuthGate로 설정하여 상태에 따라 화면 분기
+      home: const AuthGate(),
+    );
+  }
+}
+
+// 인증 상태에 따라 화면을 결정하는 관문 위젯
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  final AuthService _authService = AuthService();
+  bool _isInit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuth();
+  }
+
+  Future<void> _initializeAuth() async {
+    await _authService.checkLoginStatus();
+    setState(() {
+      _isInit = true; // 초기화 완료
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInit) {
+      // 로딩 중일 때 (스플래시 화면 등)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: _authService.isLoggedInNotifier,
+      builder: (context, isLoggedIn, child) {
+        if (!isLoggedIn) {
+          // 1. 비로그인 상태 -> 로그인 페이지 (시작 화면)
+          return const LoginPage();
+        }
+
+        return ValueListenableBuilder<bool>(
+          valueListenable: _authService.hasProfileNotifier,
+          builder: (context, hasProfile, child) {
+            if (!hasProfile) {
+              // 2. 로그인 O, 프로필 X -> 프로필 설정 페이지
+              return const ProfileSetupPage();
+            }
+            // 3. 로그인 O, 프로필 O -> 메인 홈 화면
+            return const MyHomePage(title: '');
+          },
+        );
+      },
     );
   }
 }
@@ -125,11 +183,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _logout() {
-    _authService.logout();
-    //로그아웃 시, 탭 인덱스를 '홈' (index 2)으로 강제 이동
-    setState(() {
-      _selectedIndex = 2;
-    });
+    _authService.logout();    // 로그아웃 시 AuthGate에 의해 자동으로 LoginPage로 전환
+    // //로그아웃 시, 탭 인덱스를 '홈' (index 2)으로 강제 이동
+    // setState(() {
+    //   _selectedIndex = 2;
+    // });
   }
 
   @override
@@ -141,71 +199,54 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: [
           // ValuListenableBuilder로 AuthService의 Notifier 구독
-          ValueListenableBuilder(
-            valueListenable: _authService.isLoggedInNotifier, 
-            builder: (context, isLoggedIn, child) {
-              //isLoggedIn 에 따라 ui 분기
-              if (isLoggedIn) {   // 로그인 상태
-                return IconButton(
-                  icon: const Icon(Icons.account_circle,),
-                  onPressed: _logout,
-                );
-              } else {            // 로그아웃 상태 
-                return Container(
-                  margin: const EdgeInsets.only(right: 12, top: 6, bottom: 6),
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      side: const BorderSide(color: Color.fromARGB(255, 190, 190, 190), width: 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),     //둥근 모서리
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),  //안쪽 여백 설정
-                    ),
-                    onPressed: _goToLoginPage,
-                    child: const Text(
-                      "로그인",
-                      style: TextStyle(color: Color.fromARGB(255, 110, 110, 110)),
-                    ),
-                  ),
-                );
-              }
-            }
-          )
+          // ValueListenableBuilder(
+          //   valueListenable: _authService.isLoggedInNotifier, 
+          //   builder: (context, isLoggedIn, child) {
+          //     //isLoggedIn 에 따라 ui 분기
+          //     if (isLoggedIn) {   // 로그인 상태
+          //       return IconButton(
+          //         icon: const Icon(Icons.account_circle,),
+          //         onPressed: _logout,
+          //       );
+          //     } else {            // 로그아웃 상태 
+          //       return Container(
+          //         margin: const EdgeInsets.only(right: 12, top: 6, bottom: 6),
+          //         child: TextButton(
+          //           style: TextButton.styleFrom(
+          //             side: const BorderSide(color: Color.fromARGB(255, 190, 190, 190), width: 1),
+          //             shape: RoundedRectangleBorder(
+          //               borderRadius: BorderRadius.circular(8),     //둥근 모서리
+          //             ),
+          //             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),  //안쪽 여백 설정
+          //           ),
+          //           onPressed: _goToLoginPage,
+          //           child: const Text(
+          //             "로그인",
+          //             style: TextStyle(color: Color.fromARGB(255, 110, 110, 110)),
+          //           ),
+          //         ),
+          //       );
+          //     }
+          //   }
+          // )
+          IconButton(
+            icon: const Icon(Icons.logout), // 로그아웃 아이콘으로 변경
+            onPressed: _logout,
+          ),
         ],
       ),
       //메인 화면 내용
-      body:ValueListenableBuilder<bool>(
-        valueListenable: _authService.isLoggedInNotifier,
-        builder: (context, isLoggedIn, child) {
-          // ✅ 2. 이제 'isLoggedIn' 변수를 body에서도 사용할 수 있습니다.
-          return Center(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                // 0: HelperScreen
-                isLoggedIn
-                    ? const HelperScreen()
-                    : const LoginPageRequiredWidget(tabName: "도우미"),
-
-                // 1: GroupScreen (로그인 여부와 관계없이 항상 표시)
-                GroupScreen(),
-
-                // 2: HomeScreen (로그인 여부와 관계없이 항상 표시)
-                HomeScreen(),
-
-                // 3: BooklistScreen
-                isLoggedIn
-                    ? const BooklistScreen()
-                    : const LoginPageRequiredWidget(tabName: "책장"),
-
-                // 4: ProfileScreen
-                isLoggedIn
-                    ? const ProfileScreen()
-                    : const LoginPageRequiredWidget(tabName: "프로필"),
-              ],
-            ),
-          );
-        }
+      body: Center(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            HelperScreen(),
+            GroupScreen(),
+            HomeScreen(),
+            BooklistScreen(),
+            ProfileScreen()
+          ],
+        ),
       ),
         
       //하단 네비게이터바
@@ -235,38 +276,38 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // 로그인이 필요할 때 보여줄 공용 위젯
-class LoginPageRequiredWidget extends StatelessWidget {
-  final String tabName;
-  const LoginPageRequiredWidget({super.key, required this.tabName});
+// class LoginPageRequiredWidget extends StatelessWidget {
+//   final String tabName;
+//   const LoginPageRequiredWidget({super.key, required this.tabName});
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "'$tabName' 서비스는 로그인이 필요합니다.",
-            style: const TextStyle(fontSize: 16, color: Colors.black54),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green, // 예시 색상
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-            ),
-            onPressed: () {
-              // LoginPage로 이동
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()));
-            },
-            child: const Text(
-              "로그인하러 가기",
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Text(
+//             "'$tabName' 서비스는 로그인이 필요합니다.",
+//             style: const TextStyle(fontSize: 16, color: Colors.black54),
+//           ),
+//           const SizedBox(height: 20),
+//           ElevatedButton(
+//             style: ElevatedButton.styleFrom(
+//               backgroundColor: Colors.green, // 예시 색상
+//               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+//             ),
+//             onPressed: () {
+//               // LoginPage로 이동
+//               Navigator.push(context,
+//                   MaterialPageRoute(builder: (context) => const LoginPage()));
+//             },
+//             child: const Text(
+//               "로그인하러 가기",
+//               style: TextStyle(color: Colors.white, fontSize: 16),
+//             ),
+//           )
+//         ],
+//       ),
+//     );
+//   }
+// }
