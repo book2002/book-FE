@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/constants.dart'; // primaryColor, API URL 등
+import 'package:flutter_app/main.dart';
 import 'package:flutter_app/models/profile_model.dart';
 import 'package:flutter_app/service/auth_service.dart';
 import 'package:http/http.dart' as http;
@@ -163,6 +164,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       // 요청 전송 및 응답 처리
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
+      print("${response.body}\n${response}");
 
       if (!mounted) return;
 
@@ -176,6 +178,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         } else {
           print("경고: 서버 응답에 profileId가 없습니다.");
         }
+
+        print(profileResponse.nickname);
 
         // 성공 시 2단계(Bio) 페이지로 이동
         Navigator.pushReplacement(    //profileSetupPage(1/2)를 스택에서 제거한 후 다음 단계로 이동
@@ -454,7 +458,15 @@ class _BioSetupPageState extends State<BioSetupPage> {
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        await _authService.completeProfile();   // 프로필 생성 완료 -> 메인 화면으로 전환
+        await _authService.completeProfile(); 
+        
+        if (!mounted) return;
+        
+        // AuthGate(메인 진입점)로 이동하여 화면 갱신 유도
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthGate()), 
+          (route) => false,
+        );
       } else {
         final errorBody = jsonDecode(response.body);
         final errorMessage = errorBody["message"] ?? "업데이트에 실패했습니다.";
