@@ -45,7 +45,7 @@ class ProfileResponse {
   factory ProfileResponse.fromJson(Map<String, dynamic> json) {
     return ProfileResponse(
       profileId: json['profileId'] ?? 0,
-      nickname: json['nickname'] ?? '',
+      nickname: json['nickName'] ?? '',
       bio: json['bio'] ?? '',
       profileImageUrl: json['profileImageUrl'],
       followerCount: json['followerCount'] ?? 0,
@@ -74,7 +74,7 @@ class ProfileListResponse {
   factory ProfileListResponse.fromJson(Map<String, dynamic> json) {
     return ProfileListResponse(
       profileId: json['profileId'] ?? 0,
-      nickname: json['nickname'] ?? '',
+      nickname: json['nickName'] ?? '',
       bio: json['bio'] ?? '',
       profileImageUrl: json['profileImageUrl'],
       isFollowing: json['isFollowing'] ?? false,

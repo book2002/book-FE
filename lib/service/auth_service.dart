@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart'; // ValueNotifier를 위해 임포트
+import 'package:flutter_app/constants.dart';
+import 'package:flutter_app/models/auth_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 
 // 앱 전역에서 접근할 수 있는 싱글톤(Singleton)
 class AuthService {
@@ -133,6 +136,83 @@ class AuthService {
     } catch (e) {
       print("토큰 디코딩 실패: $e");
       return null;
+    }
+  }
+
+  // 비밀번호 변경
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
+    final url = Uri.parse('$baseUrl/api/v1/member/password');
+    try {
+      final token = await getAccessToken();
+      if (token == null) return false;
+
+      final requestDto = PasswordChangeRequest(oldPassword: oldPassword, newPassword: newPassword);
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestDto.toJson()),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("비밀번호 변경 오류: $e");
+      return false;
+    }
+  }
+
+  // 계정 비활성화 (PUT /api/v1/member/inactivate)
+  Future<bool> inactivateAccount() async {
+    final url = Uri.parse('$baseUrl/api/v1/member/inactivate');
+    try {
+      final token = await getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await logout(); // 비활성화 성공 시 로그아웃 처리
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print("계정 비활성화 오류: $e");
+      return false;
+    }
+  }
+
+  // 회원 탈퇴 (DELETE /api/v1/member/delete)
+  Future<bool> deleteAccount() async {
+    final url = Uri.parse('$baseUrl/api/v1/member/delete');
+    try {
+      final token = await getAccessToken();
+      if (token == null) return false;
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        await logout(); // 탈퇴 성공 시 로그아웃 처리
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print("회원 탈퇴 오류: $e");
+      return false;
     }
   }
 

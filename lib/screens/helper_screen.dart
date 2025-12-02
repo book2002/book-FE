@@ -137,6 +137,7 @@ class _HelperScreenState extends State<HelperScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: 30,),
             Center(
               child: _isLoading 
                 ? const CircularProgressIndicator()

@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/bookpage/book_detail.dart';
 import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/testdata/book_dummy.dart';
 import 'package:flutter_app/models/book_model.dart';
+import 'package:flutter_app/service/refresh_service.dart';
 import 'package:flutter_app/widget/BookListWidget.dart';
-
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_app/constants.dart'; // baseUrl
-import 'package:flutter_app/service/auth_service.dart'; // 토큰 획득용
-import 'package:flutter_app/models/book_model.dart'; // DTO
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -23,7 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // BookService 인스턴스 생성
   final BookService _bookService = BookService();
-  final AuthService _authService = AuthService();
 
   // 서버 데이터를 저장할 리스트 변수 추가
   List<BookDto> _searchResults = [];   // 검색 결과
@@ -48,6 +41,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchHomeData();
     _fetchRecommendations(_selectedCategory);
+
+    RefreshService().bookShelfNotifier.addListener(_onShelfUpdated);
+  }
+
+  void _onShelfUpdated() {
+    print("홈 화면: 책장 변경 감지 -> 데이터 갱신");
+    _fetchHomeData();
   }
 
   // 홈 화면에 필요한 데이터(내 책장, 추천, 신간)를 병렬로 가져오는 함수
@@ -130,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    RefreshService().bookShelfNotifier.removeListener(_onShelfUpdated);
     _searchController.dispose();
     super.dispose();
   }
@@ -202,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? const Center(child: Text("읽고 있는 책이 없어요. 책을 추가해보세요!"),)
                   : ListView.builder(
                       scrollDirection: Axis.horizontal, //가로 스크롤
-                      itemCount: dummyBooks.length,
+                      itemCount: _myReadingBooks.length,
                       shrinkWrap: true,         //내부 높이 내용에 맞게 계산
                       physics: const AlwaysScrollableScrollPhysics(), //스크롤 허용
                       itemBuilder: (context, index) {

@@ -177,75 +177,24 @@ class _MyHomePageState extends State<MyHomePage> {
     _authService.checkLoginStatus();
   }
 
-  void _goToLoginPage() async {
-    // 로그인 페이지 이동
-    Navigator.push(context, MaterialPageRoute(builder: (context)=>const LoginPage()));
-  }
-
-  void _logout() {
-    _authService.logout();    // 로그아웃 시 AuthGate에 의해 자동으로 LoginPage로 전환
-    // //로그아웃 시, 탭 인덱스를 '홈' (index 2)으로 강제 이동
-    // setState(() {
-    //   _selectedIndex = 2;
-    // });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255), //배경색 지정
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(widget.title),
-        actions: [
-          // ValuListenableBuilder로 AuthService의 Notifier 구독
-          // ValueListenableBuilder(
-          //   valueListenable: _authService.isLoggedInNotifier, 
-          //   builder: (context, isLoggedIn, child) {
-          //     //isLoggedIn 에 따라 ui 분기
-          //     if (isLoggedIn) {   // 로그인 상태
-          //       return IconButton(
-          //         icon: const Icon(Icons.account_circle,),
-          //         onPressed: _logout,
-          //       );
-          //     } else {            // 로그아웃 상태 
-          //       return Container(
-          //         margin: const EdgeInsets.only(right: 12, top: 6, bottom: 6),
-          //         child: TextButton(
-          //           style: TextButton.styleFrom(
-          //             side: const BorderSide(color: Color.fromARGB(255, 190, 190, 190), width: 1),
-          //             shape: RoundedRectangleBorder(
-          //               borderRadius: BorderRadius.circular(8),     //둥근 모서리
-          //             ),
-          //             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),  //안쪽 여백 설정
-          //           ),
-          //           onPressed: _goToLoginPage,
-          //           child: const Text(
-          //             "로그인",
-          //             style: TextStyle(color: Color.fromARGB(255, 110, 110, 110)),
-          //           ),
-          //         ),
-          //       );
-          //     }
-          //   }
-          // )
-          IconButton(
-            icon: const Icon(Icons.logout), // 로그아웃 아이콘으로 변경
-            onPressed: _logout,
-          ),
-        ],
-      ),
+
       //메인 화면 내용
-      body: Center(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            HelperScreen(),
-            GroupScreen(),
-            HomeScreen(),
-            BooklistScreen(),
-            ProfileScreen()
-          ],
+      body: SafeArea(
+        child: Center(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              HelperScreen(),
+              GroupScreen(),
+              HomeScreen(),
+              BooklistScreen(),
+              ProfileScreen()
+            ],
+          ),
         ),
       ),
         

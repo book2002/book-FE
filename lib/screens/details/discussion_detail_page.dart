@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/models/discussion_model.dart';
 import 'package:flutter_app/screens/details/discussion_edit_page.dart'; // [신규] 수정 페이지
 import 'package:flutter_app/service/discussion_service.dart';
-import 'package:flutter_app/service/auth_service.dart';
 
 class DiscussionDetailPage extends StatefulWidget {
   final int discussionId;
@@ -22,7 +21,6 @@ class DiscussionDetailPage extends StatefulWidget {
 
 class _DiscussionDetailPageState extends State<DiscussionDetailPage> {
   final DiscussionService _discussionService = DiscussionService();
-  final AuthService _authService = AuthService();
 
   DiscussionResponse? _discussion;
   List<DiscussionCommentResponse> _comments = [];
@@ -30,7 +28,6 @@ class _DiscussionDetailPageState extends State<DiscussionDetailPage> {
   bool _isLoading = true;
   bool _isLoadingComments = true;
   String? _errorMessage;
-  String? _myNickname; // 작성자 판단용
   bool _isContentChanged = false; // 목록 갱신 트리거
 
   final TextEditingController _commentController = TextEditingController();

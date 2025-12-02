@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/group_post_model.dart';
 import 'package:flutter_app/screens/details/post_edit_page.dart';
-import 'package:flutter_app/service/auth_service.dart';
 import 'package:flutter_app/service/group_post_service.dart'; // PostModel 사용을 위해 임포트
 
 class GroupPostDetailPage extends StatefulWidget {
@@ -22,13 +21,11 @@ class GroupPostDetailPage extends StatefulWidget {
 
 class _GroupPostDetailPageState extends State<GroupPostDetailPage> {
   final GroupPostService _postService = GroupPostService();
-  final AuthService _authService = AuthService();
 
   GroupPostResponse? _post;
   bool _isLoading = true;
   String? _errorMessage;
 
-  String? _myNickname;    // 작성자 닉네임 비교용
   bool _isContentChanged = false;   // 컨텐츠 변경 여부 추적 변수 
 
   List<GroupCommentResponse> _comments = [];    // 댓글 데이터 상태 변수
