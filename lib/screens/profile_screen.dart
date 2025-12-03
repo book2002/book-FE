@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/book_model.dart';
-import 'package:flutter_app/models/group_model.dart';
-import 'package:flutter_app/models/record_model.dart';
-import 'package:flutter_app/screens/details/group_info_page.dart';
-import 'package:flutter_app/screens/profile/password_change_page.dart';
-import 'package:flutter_app/screens/profile/profile_edit_page.dart';
-import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/service/group_service.dart';
-import 'package:flutter_app/service/record_service.dart';
-import 'package:flutter_app/service/refresh_service.dart';
-import 'package:flutter_app/testdata/book_dummy.dart';
-import 'package:flutter_app/service/auth_service.dart'; // AuthService
-import 'package:flutter_app/constants.dart'; // URL 상수
+import 'package:Readly/models/book_model.dart';
+import 'package:Readly/models/group_model.dart';
+import 'package:Readly/models/record_model.dart';
+import 'package:Readly/screens/details/group_info_page.dart';
+import 'package:Readly/screens/profile/password_change_page.dart';
+import 'package:Readly/screens/profile/profile_edit_page.dart';
+import 'package:Readly/service/book_service.dart';
+import 'package:Readly/service/group_service.dart';
+import 'package:Readly/service/record_service.dart';
+import 'package:Readly/service/refresh_service.dart';
+import 'package:Readly/service/auth_service.dart'; // AuthService
+import 'package:Readly/constants.dart'; // URL 상수
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 

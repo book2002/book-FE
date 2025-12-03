@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/service/auth_service.dart';
 
 class PasswordChangePage extends StatefulWidget {
   const PasswordChangePage({Key? key}) : super(key: key);

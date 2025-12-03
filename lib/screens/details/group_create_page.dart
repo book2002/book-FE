@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/group_model.dart';
-import 'package:flutter_app/service/group_service.dart';
+import 'package:Readly/models/group_model.dart';
+import 'package:Readly/service/group_service.dart';
 
 class GroupCreatePage extends StatefulWidget {
   const GroupCreatePage({Key? key}) : super(key: key);

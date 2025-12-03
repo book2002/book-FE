@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/book_model.dart';
-import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/service/refresh_service.dart';
-import 'package:flutter_app/widget/BookListWidget.dart';
+import 'package:Readly/models/book_model.dart';
+import 'package:Readly/service/book_service.dart';
+import 'package:Readly/service/refresh_service.dart';
+import 'package:Readly/widget/BookListWidget.dart';
 
 class BooklistScreen extends StatefulWidget {
 

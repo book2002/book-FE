@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/discussion_model.dart';
-import 'package:flutter_app/models/group_model.dart';
-import 'package:flutter_app/models/group_post_model.dart';
-import 'package:flutter_app/screens/details/discussion_detail_page.dart';
-import 'package:flutter_app/screens/details/group_post_detail_page.dart';
-import 'package:flutter_app/screens/details/post_create_page.dart';
-import 'package:flutter_app/service/discussion_service.dart';
-import 'package:flutter_app/service/group_post_service.dart';
-import 'package:flutter_app/service/group_service.dart';
+import 'package:Readly/models/discussion_model.dart';
+import 'package:Readly/models/group_model.dart';
+import 'package:Readly/models/group_post_model.dart';
+import 'package:Readly/screens/details/discussion_detail_page.dart';
+import 'package:Readly/screens/details/group_post_detail_page.dart';
+import 'package:Readly/screens/details/post_create_page.dart';
+import 'package:Readly/service/discussion_service.dart';
+import 'package:Readly/service/group_post_service.dart';
+import 'package:Readly/service/group_service.dart';
 
 // [신규 추가] 게시글 데이터 모델 클래스
 class PostModel {

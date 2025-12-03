@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/book_model.dart';
-import 'package:flutter_app/models/record_model.dart';
-import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/service/record_service.dart';
-import 'package:flutter_app/service/refresh_service.dart';
+import 'package:Readly/models/book_model.dart';
+import 'package:Readly/models/record_model.dart';
+import 'package:Readly/service/book_service.dart';
+import 'package:Readly/service/record_service.dart';
+import 'package:Readly/service/refresh_service.dart';
 
 class BookDetailPage extends StatefulWidget {
   final String isbn;  // api 요청에 필수적

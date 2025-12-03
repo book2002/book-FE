@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/group_post_model.dart';
-import 'package:flutter_app/screens/details/post_edit_page.dart';
-import 'package:flutter_app/service/group_post_service.dart'; // PostModel 사용을 위해 임포트
+import 'package:Readly/models/group_post_model.dart';
+import 'package:Readly/screens/details/post_edit_page.dart';
+import 'package:Readly/service/group_post_service.dart'; // PostModel 사용을 위해 임포트
 
 class GroupPostDetailPage extends StatefulWidget {
   final int postId;

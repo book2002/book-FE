@@ -1,9 +1,9 @@
 // 독서 모임 관련 API 통신 서비스
 
 import 'dart:convert';
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/group_model.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/group_model.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 

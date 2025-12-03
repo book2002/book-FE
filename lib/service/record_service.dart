@@ -1,9 +1,9 @@
 // [신규] 감상문 및 문장 기록 API 통신을 담당하는 서비스
 
 import 'dart:convert';
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/record_model.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/record_model.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 
 class RecordService {

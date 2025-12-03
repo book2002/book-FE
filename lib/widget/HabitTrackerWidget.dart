@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/service/habit_service.dart';
+import 'package:Readly/service/habit_service.dart';
 import 'package:intl/intl.dart'; // 날짜 포맷용
 import 'package:table_calendar/table_calendar.dart'; // [필수] 달력 패키지 추가 (pubspec.yaml에 table_calendar 추가 필요)
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/bookpage/book_detail.dart';
-import 'package:flutter_app/models/book_model.dart';
+import 'package:Readly/bookpage/book_detail.dart';
+import 'package:Readly/models/book_model.dart';
 
 class BookListWidget extends StatelessWidget {
   //tabType -> 탭별 ui 재정을 위한 매개변수

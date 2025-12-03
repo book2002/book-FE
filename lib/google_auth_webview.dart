@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:Readly/constants.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 //import 'package:shared_preferences/shared_preferences.dart'; // 토큰 저장을 위해
 
@@ -17,7 +18,7 @@ class _GoogleAuthWebViewPageState extends State<GoogleAuthWebViewPage> {
   bool _isLoading = true;
 
   // 백엔드가 로그인을 완료하고 토큰을 전달해주는 최종 목적지 URL입니다.
-  final String _successRedirectUrlPrefix = "https://your-backend.com/auth/success";
+  final String _successRedirectUrlPrefix = "$baseUrl/auth/success";
 
   @override
   Widget build(BuildContext context) {

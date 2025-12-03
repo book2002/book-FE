@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/habit_model.dart';
-import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/screens/details/loan_info_page.dart';
-import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/service/habit_service.dart';
-import 'package:flutter_app/service/loan_service.dart';
-import 'package:flutter_app/widget/HabitTrackerWidget.dart';
-import 'package:flutter_app/widget/habit_setting_page.dart';
-import 'package:flutter_app/widget/timer_page.dart';
+import 'package:Readly/models/habit_model.dart';
+import 'package:Readly/models/loan_model.dart';
+import 'package:Readly/screens/details/loan_info_page.dart';
+import 'package:Readly/service/book_service.dart';
+import 'package:Readly/service/habit_service.dart';
+import 'package:Readly/service/loan_service.dart';
+import 'package:Readly/widget/HabitTrackerWidget.dart';
+import 'package:Readly/widget/habit_setting_page.dart';
+import 'package:Readly/widget/timer_page.dart';
 
 class HelperScreen extends StatefulWidget {
   const HelperScreen({Key? key}) : super(key: key);

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart'; // ValueNotifier를 위해 임포트
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/auth_model.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/auth_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/loan_model.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 
 class LoanService {

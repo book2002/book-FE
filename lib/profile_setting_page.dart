@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/constants.dart'; // primaryColor, API URL 등
-import 'package:flutter_app/main.dart';
-import 'package:flutter_app/models/profile_model.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/constants.dart'; // primaryColor, API URL 등
+import 'package:Readly/main.dart';
+import 'package:Readly/models/profile_model.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart'; // http_parser 임포트
 import 'dart:convert';

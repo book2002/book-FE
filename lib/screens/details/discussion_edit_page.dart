@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/discussion_model.dart';
-import 'package:flutter_app/service/discussion_service.dart';
+import 'package:Readly/models/discussion_model.dart';
+import 'package:Readly/service/discussion_service.dart';
 
 class DiscussionEditPage extends StatefulWidget {
   final DiscussionResponse discussion;

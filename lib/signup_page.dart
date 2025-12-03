@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/auth_model.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/auth_model.dart';
 
 import 'package:intl/intl.dart';          //DateFormat 사용을 위한 intl 패키지
 //flutter pub add intl로 다운로드 후 사용

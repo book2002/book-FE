@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/group_post_model.dart';
-import 'package:flutter_app/service/group_post_service.dart';
+import 'package:Readly/models/group_post_model.dart';
+import 'package:Readly/service/group_post_service.dart';
 
 class GroupPostEditPage extends StatefulWidget {
   final GroupPostResponse post;

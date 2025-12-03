@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/login_page.dart';   //login_page import
-import 'package:flutter_app/profile_setting_page.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/login_page.dart';   //login_page import
+import 'package:Readly/profile_setting_page.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
 //하단 네비게이터로 전환될 screen import
 import 'screens/home_screen.dart';
 import 'screens/booklist_screen.dart';
 import 'screens/profile_screen.dart';
-import 'package:flutter_app/screens/grop_screen.dart';
-import 'package:flutter_app/screens/helper_screen.dart';
+import 'package:Readly/screens/grop_screen.dart';
+import 'package:Readly/screens/helper_screen.dart';
 
 void main() {
   runApp(const MyApp());

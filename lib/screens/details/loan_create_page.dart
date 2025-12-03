@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/service/loan_service.dart';
+import 'package:Readly/models/loan_model.dart';
+import 'package:Readly/service/loan_service.dart';
 import 'package:intl/intl.dart';
 
 class LoanCreatePage extends StatefulWidget {

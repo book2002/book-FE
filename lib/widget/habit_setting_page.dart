@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/habit_model.dart';
-import 'package:flutter_app/service/habit_service.dart';
+import 'package:Readly/models/habit_model.dart';
+import 'package:Readly/service/habit_service.dart';
 
 class HabitSettingPage extends StatefulWidget {
   const HabitSettingPage({Key? key}) : super(key: key);

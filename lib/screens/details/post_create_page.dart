@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/service/discussion_service.dart';
-import 'package:flutter_app/service/group_post_service.dart';
+import 'package:Readly/service/discussion_service.dart';
+import 'package:Readly/service/group_post_service.dart';
 
 class GroupPostCreatePage extends StatefulWidget {
   final int groupId;

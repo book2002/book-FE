@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/constants.dart';
+import 'package:Readly/constants.dart';
 
 class StopwatchWidget extends StatefulWidget {
   const StopwatchWidget({Key? key}) : super(key: key);

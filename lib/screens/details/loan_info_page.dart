@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/loan_model.dart';
-import 'package:flutter_app/screens/details/loan_create_page.dart';
-import 'package:flutter_app/service/book_service.dart';
-import 'package:flutter_app/service/loan_service.dart';
+import 'package:Readly/models/loan_model.dart';
+import 'package:Readly/screens/details/loan_create_page.dart';
+import 'package:Readly/service/book_service.dart';
+import 'package:Readly/service/loan_service.dart';
 
 // [신규 추가] 대출 기록 데이터 모델
 class LoanRecordModel {

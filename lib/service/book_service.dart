@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter_app/constants.dart';
-import 'package:flutter_app/models/book_model.dart';
-import 'package:flutter_app/service/auth_service.dart';
+import 'package:Readly/constants.dart';
+import 'package:Readly/models/book_model.dart';
+import 'package:Readly/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 
 class BookService {
@@ -230,7 +230,7 @@ class BookService {
 
   // 저장된 도서 목록 삭제 (DELETE api/v1/my-shelf/{itemId})
   Future<bool> deleteBookFromShelf(int itemId) async {
-    final url = Uri.parse('$baseUrl/api/v1/my-shelf/$itemId');
+    final url = Uri.parse('$baseUrl/api/v1/my-shelf/items/$itemId');
 
     try {
       final token = await _authService.getAccessToken();

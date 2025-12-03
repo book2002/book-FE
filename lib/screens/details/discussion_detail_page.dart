@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/discussion_model.dart';
-import 'package:flutter_app/screens/details/discussion_edit_page.dart'; // [신규] 수정 페이지
-import 'package:flutter_app/service/discussion_service.dart';
+import 'package:Readly/models/discussion_model.dart';
+import 'package:Readly/screens/details/discussion_edit_page.dart'; // [신규] 수정 페이지
+import 'package:Readly/service/discussion_service.dart';
 
 class DiscussionDetailPage extends StatefulWidget {
   final int discussionId;

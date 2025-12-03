@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/group_model.dart';
-import 'package:flutter_app/screens/details/group_create_page.dart';
-import 'package:flutter_app/screens/details/group_info_page.dart';
-import 'package:flutter_app/service/auth_service.dart';
-import 'package:flutter_app/service/group_service.dart';
+import 'package:Readly/models/group_model.dart';
+import 'package:Readly/screens/details/group_create_page.dart';
+import 'package:Readly/screens/details/group_info_page.dart';
+import 'package:Readly/service/auth_service.dart';
+import 'package:Readly/service/group_service.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({Key? key}) : super(key: key);
